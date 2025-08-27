@@ -6,11 +6,9 @@ __author__ = "Rosetta Reatherford"
 __license__ = "AGPL v3"
 __maintainer__ = "The Public Library of Science (PLOS)"
 
-from typing import Sequence
-
 from django.core.management.base import BaseCommand, CommandError
 
-import plugins.editorial_manager_transfer_service.file_creation as file_creation
+import plugins.editorial_manager_transfer_service.file_transfer_service as file_transfer_service
 
 
 class Command(BaseCommand):
@@ -25,9 +23,13 @@ class Command(BaseCommand):
         article_id: str = open(options["article_id"], "r", encoding="utf-8-sig").read().strip()
 
         print("Beginning bundling process for article...")
-        export_files: Sequence[str] = file_creation.create_export_files(article_id)
-        if not export_files:
+        export_zip_file: str = file_transfer_service.get_export_zip_filepath(article_id)
+        if not export_zip_file:
             raise CommandError("Error while creating export ZIP.")
+
+        export_go_file: str = file_transfer_service.get_export_go_filepath(article_id)
+        if not export_go_file:
+            raise CommandError("Error while creating export GO file.")
 
         print("Export files created.")
 
