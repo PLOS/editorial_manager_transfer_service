@@ -84,7 +84,7 @@ def process_failed_fetching_article(article_id: str) -> str:
 
 def process_failed_fetching_metadata(article_id):
     """
-    Gets the log message for when an article failed to be fetched.
+    Gets the log message for when an article's metadata failed to be fetched.
     :param: article_id: The ID of the article being fetched.
     :return: The logger message.
     """
@@ -93,8 +93,17 @@ def process_failed_fetching_metadata(article_id):
 
 def process_failed_fetching_article_files(article_id):
     """
-    Gets the log message for when an article failed to be fetched.
+    Gets the log message for when an article's files failed to be fetched.
     :param: article_id: The ID of the article being fetched.
     :return: The logger message.
     """
     return "Fetching files for article (ID: {0}) failed. Discontinuing export process.".format(article_id)
+
+
+def process_failed_fetching_journal(article_id):
+    """
+    Gets the log message for when an article's journal failed to be fetched.
+    :param: article_id: The ID of the article.
+    :return: The logger message.
+     """
+    return "Fetching journal where article (ID: {0}) lives failed. Discontinuing export process.".format(article_id)
