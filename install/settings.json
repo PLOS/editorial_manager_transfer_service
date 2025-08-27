@@ -1,0 +1,47 @@
+[
+  {
+    "group": {
+      "name": "plugin:editorial_manager_transfer_service"
+    },
+    "setting": {
+      "description": "Your journal's submission partner code for Editorial Manager. Capitalization DOES matter.",
+      "is_translatable": false,
+      "name": "submission_partner_code",
+      "pretty_name": "Submission Partner Code",
+      "type": "char"
+    },
+    "value": {
+      "default": ""
+    }
+  },
+  {
+    "group": {
+      "name": "plugin:editorial_manager_transfer_service"
+    },
+    "setting": {
+      "description": "Your journal's license code for Editorial Manager.",
+      "is_translatable": false,
+      "name": "license_code",
+      "pretty_name": "License Code",
+      "type": "char"
+    },
+    "value": {
+      "default": ""
+    }
+  },
+  {
+    "group": {
+      "name": "plugin:editorial_manager_transfer_service"
+    },
+    "setting": {
+      "description": "Your journal's journal code for Editorial Manager.",
+      "is_translatable": false,
+      "name": "journal_code",
+      "pretty_name": "Journal Code",
+      "type": "char"
+    },
+    "value": {
+      "default": ""
+    }
+  }
+]
