@@ -7,7 +7,7 @@ __maintainer__ = "The Public Library of Science (PLOS)"
 
 import os
 import uuid
-import xml.etree.cElementTree as ET
+import xml.etree.cElementTree as ETree
 import zipfile
 from collections.abc import Sequence
 from typing import List
@@ -112,7 +112,7 @@ class FileCreation:
             return
 
         # Attempt to fetch the article files.
-        article_files: Sequence[File] = fetch_article_files(article)
+        article_files: Sequence[File] = self.fetch_article_files(article)
         if len(article_files) <= 0:
             logger.error(logger_messages.process_failed_fetching_article_files(article_id))
             return
@@ -136,32 +136,32 @@ class FileCreation:
         :param article_filenames: The filenames of the article's associated files.
         :param filename: The name to use for the go.xml file (Must match the name of the zip file).
         """
-        go: ET.Element = ET.Element("GO")
+        go: ETree.Element = ETree.Element("GO")
         go.set("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance")
         go.set("xsi:noNamespaceSchemaLocation",
                "app://Aries.EditorialManager/Resources/XmlDefineTransformFiles/aries_import_go_file.xsd")
 
         # Format the header.
-        header: ET.Element = ET.SubElement(go, "header")
-        ET.SubElement(header, "version", number="1.0")
-        ET.SubElement(header, "journal", code=self.journal_code)
-        ET.SubElement(header, "import-type", id="2")
-        parameters: ET.Element = ET.SubElement(header, "parameters")
-        ET.SubElement(parameters, "parameter", name="license-code",
-                      value="{0}_{1}".format(self.submission_partner_code, self.license_code))
+        header: ETree.Element = ETree.SubElement(go, "header")
+        ETree.SubElement(header, "version", number="1.0")
+        ETree.SubElement(header, "journal", code=self.journal_code)
+        ETree.SubElement(header, "import-type", id="2")
+        parameters: ETree.Element = ETree.SubElement(header, "parameters")
+        ETree.SubElement(parameters, "parameter", name="license-code",
+                         value="{0}_{1}".format(self.submission_partner_code, self.license_code))
 
         # Begin the filegroup.
-        filegroup: ET.Element = ET.SubElement(go, "filegroup")
+        filegroup: ETree.Element = ETree.SubElement(go, "filegroup")
 
         # Create the archive and metadata files.
-        ET.SubElement(filegroup, "archive-file", name="{0}.zip".format(filename))
-        ET.SubElement(filegroup, "metadata-file", name=metadata_filename)
+        ETree.SubElement(filegroup, "archive-file", name="{0}.zip".format(filename))
+        ETree.SubElement(filegroup, "metadata-file", name=metadata_filename)
 
         for article_filename in article_filenames:
-            ET.SubElement(filegroup, "file", name=article_filename)
+            ETree.SubElement(filegroup, "file", name=article_filename)
 
-        tree = ET.ElementTree(go)
-        self.go_filepath = os.path.join(self.export_folder, "{0}.go.xml".format(filename));
+        tree = ETree.ElementTree(go)
+        self.go_filepath = os.path.join(self.export_folder, "{0}.go.xml".format(filename))
         tree.write(self.go_filepath)
 
     @staticmethod
