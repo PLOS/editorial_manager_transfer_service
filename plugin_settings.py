@@ -6,10 +6,12 @@ __license__ = "AGPL v3"
 __maintainer__ = "The Public Library of Science (PLOS)"
 
 import os
-from utils.logger import get_logger
+
 from django.conf import settings
-from utils import plugins
+
 import logger_messages
+from utils import plugins
+from utils.logger import get_logger
 
 PLUGIN_NAME = 'Editorial Manager Transfer Service Plugin'
 DISPLAY_NAME = 'Editorial Manager Transfer Service'
@@ -25,6 +27,7 @@ IMPORT_FILE_PATH = os.path.join(settings.BASE_DIR, 'files', 'plugins', 'editoria
 
 logger = get_logger(__name__)
 
+
 class EditorialManagerTransferServicePlugin(plugins.Plugin):
     """
     The plugin class for the Editorial Manager Transfer Service.
@@ -38,6 +41,7 @@ class EditorialManagerTransferServicePlugin(plugins.Plugin):
 
     version = VERSION
     janeway_version = JANEWAY_VERSION
+
 
 def install():
     """
