@@ -23,14 +23,14 @@ from utils.logger import get_logger
 logger = get_logger(__name__)
 
 
-def create_export_files(article_id: str, journal: Journal) -> List[str]:
+def create_export_files(article_id: str) -> List[str]:
     """
     Returns a list of file paths to the files to be exported.
     :param article_id: The id of the article.
     :param journal: The journal where the article is located.
     :return: A list of file paths to the paths to be exported.
     """
-    file_creator: FileCreation = FileCreation(article_id, journal)
+    file_creator: FileCreation = FileCreation(article_id)
 
     return List([file_creator.get_zip_filepath(), file_creator.get_go_filepath()])
 
@@ -52,23 +52,38 @@ class FileCreation:
     A class for managing the export file creation process.
     """
 
-    def __init__(self, article_id: str, journal: Journal):
+    def __init__(self, article_id: str):
         self.zip_filepath: str | None = None
         self.go_filepath: str | None = None
+
+        # Get the article based upon the given article ID.
+        logger.info(logger_messages.process_fetching_article(article_id))
+        try:
+            self.article: Article = self.__fetch_article(article_id)
+        except Article.DoesNotExist:
+            logger.error(logger_messages.process_failed_fetching_article(article_id))
+            return
+
+        # Attempt to get the journal.
+        self.journal: Journal = self.article.journal
+        if self.journal is None:
+            logger.error(logger_messages.process_failed_fetching_journal(article_id))
+            return
+
         self.license_code: str = setting_handler.get_setting(
             setting_group_name="plugin:editorial_manager_transfer_service", setting_name="license_code",
-            journal=journal, ).processed_value
+            journal=self.journal, ).processed_value
         self.journal_code: str = setting_handler.get_setting(
             setting_group_name="plugin:editorial_manager_transfer_service", setting_name="journal_code",
-            journal=journal, ).processed_value
+            journal=self.journal, ).processed_value
         self.submission_partner_code: str = setting_handler.get_setting(
             setting_group_name="plugin:editorial_manager_transfer_service", setting_name="submission_partner_code",
-            journal=journal, ).processed_value
+            journal=self.journal, ).processed_value
 
         export_folders: Sequence[str] = get_article_export_folders()
         self.export_folder: str | None = export_folders[0] if len(export_folders) > 0 else None
 
-        self.__create_export_file(article_id)
+        self.__create_export_file()
 
     def get_zip_filepath(self) -> str | None:
         """
@@ -90,29 +105,21 @@ class FileCreation:
         else:
             return self.go_filepath
 
-    def __create_export_file(self, article_id: str):
+    def __create_export_file(self):
         """
         Creates the export file for
-        :param article_id: The ID of the article to create an export file for.
-        :return: The filepath to the created export file.
         """
 
-        # Get the article based upon the given article ID.
-        logger.info(logger_messages.process_fetching_article(article_id))
-        try:
-            article: Article = self.__fetch_article(article_id)
-        except Exception:
-            logger.error(logger_messages.process_failed_fetching_article(article_id))
-            return
+        article_id: str = self.article.pk
 
         # Attempt to create the metadata file.
-        metadata_file: File | None = self.__create_metadata_file(article)
+        metadata_file: File | None = self.__create_metadata_file(self.article)
         if metadata_file is None:
             logger.error(logger_messages.process_failed_fetching_metadata(article_id))
             return
 
         # Attempt to fetch the article files.
-        article_files: Sequence[File] = self.fetch_article_files(article)
+        article_files: Sequence[File] = self.fetch_article_files(self.article)
         if len(article_files) <= 0:
             logger.error(logger_messages.process_failed_fetching_article_files(article_id))
             return
@@ -121,9 +128,9 @@ class FileCreation:
 
         self.zip_filepath: str = os.path.join(self.export_folder, "{0}.zip".format(prefix))
         with zipfile.ZipFile(self.zip_filepath, "w") as zipf:
-            zipf.write(metadata_file.get_file_path(article))
+            zipf.write(metadata_file.get_file_path(self.article))
             for article_file in article_files:
-                zipf.write(article_file.get_file_path(article))
+                zipf.write(article_file.get_file_path(self.article))
             filenames: Sequence[str] = zipf.namelist()
             zipf.close()
 
@@ -164,15 +171,6 @@ class FileCreation:
         self.go_filepath = os.path.join(self.export_folder, "{0}.go.xml".format(filename))
         tree.write(self.go_filepath)
 
-    @staticmethod
-    def __fetch_article(article_id: str) -> Article:
-        """
-        Gets the article object for the given article ID.
-        :param article_id: The ID of the article.
-        :return: The article object with the given article ID.
-        """
-        return Article.get_article(article_id)
-
     def __create_metadata_file(self, article: Article) -> File | None:
         """
         Creates the metadata file based on the given article.
@@ -180,6 +178,15 @@ class FileCreation:
         :return:
         """
         pass
+
+    @staticmethod
+    def __fetch_article(article_id: str) -> Article:
+        """
+        Gets the article object for the given article ID.
+        :param article_id: The ID of the article.
+        :return: The article object with the given article ID.
+        """
+        return Article.get_article(article_id).get_deferred_fields()
 
     @staticmethod
     def fetch_article_files(article: Article) -> List[File]:
