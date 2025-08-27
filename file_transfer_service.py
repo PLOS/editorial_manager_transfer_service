@@ -1,0 +1,80 @@
+"""
+This service is used to manage the transfers to and from Aries's Editorial Manager system.
+"""
+__author__ = "Rosetta Reatherford"
+__license__ = "AGPL v3"
+__maintainer__ = "The Public Library of Science (PLOS)"
+
+from plugins.editorial_manager_transfer_service.file_creation import ExportFileCreation
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
+
+
+class FileTransferService:
+    """
+    Manages the transfers to and from Aries's Editorial Manager system.
+    """
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __init__(self):
+        """
+        Constructor.
+        """
+        if not hasattr(self, '_initialized'):  # Prevent re-initialization on subsequent calls
+            self.exports: dict[str, ExportFileCreation] = dict()
+            self._initialized = True
+
+    def get_export_file_creator(self, article_id: str) -> ExportFileCreation | None:
+        """
+        Gets the export file creator for the given article.
+        :param article_id: The article id.
+        :return: The export file creator.
+        """
+        if article_id not in self.exports:
+            file_creator = ExportFileCreation(article_id)
+            if file_creator.in_error_state:
+                return None
+            self.exports[article_id] = file_creator
+        return self.exports[article_id]
+
+    def get_export_zip_filepath(self, article_id: str) -> str | None:
+        """
+        Gets the export zip file path for the given article.
+        :param article_id: The article id.
+        :return: The export zip file path.
+        """
+        file_export_creator = self.get_export_file_creator(article_id)
+        return file_export_creator.get_zip_filepath() if file_export_creator else None
+
+    def get_export_go_filepath(self, article_id: str) -> str | None:
+        """
+        Gets the export go file path for the given article.
+        :param article_id: The article id.
+        :return: The export go file path.
+        """
+        file_export_creator = self.get_export_file_creator(article_id)
+        return file_export_creator.get_go_filepath() if file_export_creator else None
+
+
+def get_export_zip_filepath(article_id: str) -> str | None:
+    """
+    Gets the zip file path for a given article.
+    :param article_id: The article id.
+    :return: The zip file path.
+    """
+    return FileTransferService().get_export_zip_filepath(article_id)
+
+
+def get_export_go_filepath(article_id: str) -> str | None:
+    """
+    Gets the export file path for a go file created for a given article.
+    :param article_id: The article id.
+    :return: The export go file path.
+    """
+    return FileTransferService().get_export_go_filepath(article_id)

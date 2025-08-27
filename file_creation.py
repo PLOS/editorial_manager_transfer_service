@@ -23,18 +23,6 @@ from utils.logger import get_logger
 logger = get_logger(__name__)
 
 
-def create_export_files(article_id: str) -> List[str]:
-    """
-    Returns a list of file paths to the files to be exported.
-    :param article_id: The id of the article.
-    :param journal: The journal where the article is located.
-    :return: A list of file paths to the paths to be exported.
-    """
-    file_creator: FileCreation = FileCreation(article_id)
-
-    return List([file_creator.get_zip_filepath(), file_creator.get_go_filepath()])
-
-
 def get_article_export_folders() -> List[str]:
     """
     Gets the filepaths for the folders used for exporting articles.
@@ -47,7 +35,7 @@ def get_article_export_folders() -> List[str]:
         return []
 
 
-class FileCreation:
+class ExportFileCreation:
     """
     A class for managing the export file creation process.
     """
@@ -55,6 +43,7 @@ class FileCreation:
     def __init__(self, article_id: str):
         self.zip_filepath: str | None = None
         self.go_filepath: str | None = None
+        self.in_error_state: bool = False
 
         # Get the article based upon the given article ID.
         logger.info(logger_messages.process_fetching_article(article_id))
@@ -62,12 +51,14 @@ class FileCreation:
             self.article: Article = self.__fetch_article(article_id)
         except Article.DoesNotExist:
             logger.error(logger_messages.process_failed_fetching_article(article_id))
+            self.in_error_state = True
             return
 
         # Attempt to get the journal.
         self.journal: Journal = self.article.journal
         if self.journal is None:
             logger.error(logger_messages.process_failed_fetching_journal(article_id))
+            self.in_error_state = True
             return
 
         self.license_code: str = setting_handler.get_setting(
@@ -91,6 +82,7 @@ class FileCreation:
         :return: The zip file path.
         """
         if self.zip_filepath is None:
+            self.in_error_state = True
             return None
         else:
             return self.zip_filepath
@@ -101,6 +93,7 @@ class FileCreation:
         :return: The filepath for the go.xml file or None, if the process failed.
         """
         if self.go_filepath is None:
+            self.in_error_state = True
             return None
         else:
             return self.go_filepath
@@ -116,12 +109,14 @@ class FileCreation:
         metadata_file: File | None = self.__create_metadata_file(self.article)
         if metadata_file is None:
             logger.error(logger_messages.process_failed_fetching_metadata(article_id))
+            self.in_error_state = True
             return
 
         # Attempt to fetch the article files.
         article_files: Sequence[File] = self.fetch_article_files(self.article)
         if len(article_files) <= 0:
             logger.error(logger_messages.process_failed_fetching_article_files(article_id))
+            self.in_error_state = True
             return
 
         prefix: str = "{0}_{1}".format(self.submission_partner_code, uuid.uuid4())
