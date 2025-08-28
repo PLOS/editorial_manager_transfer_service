@@ -7,18 +7,10 @@ __maintainer__ = "The Public Library of Science (PLOS)"
 
 import os
 
+import plugins.editorial_manager_transfer_service.consts as consts
 import plugins.editorial_manager_transfer_service.logger_messages as logger_messages
 from utils import plugins
 from utils.logger import get_logger
-
-PLUGIN_NAME = logger_messages.PLUGIN_NAME
-DISPLAY_NAME = 'Editorial Manager Transfer Service'
-DESCRIPTION = 'A plugin to provide information for Aries\' Editorial Manager to enable automatic transfers.'
-AUTHOR = 'PLOS'
-VERSION = '0.1'
-SHORT_NAME = 'editorial_manager_transfer_service'
-MANAGER_URL = 'editorial_manager_transfer_service_manager'
-JANEWAY_VERSION = "1.8.0"
 
 logger = get_logger(__name__)
 
@@ -27,15 +19,15 @@ class EditorialManagerTransferServicePlugin(plugins.Plugin):
     """
     The plugin class for the Editorial Manager Transfer Service.
     """
-    plugin_name = PLUGIN_NAME
-    display_name = DISPLAY_NAME
-    description = DESCRIPTION
-    author = AUTHOR
-    short_name = SHORT_NAME
-    manager_url = MANAGER_URL
+    plugin_name = consts.PLUGIN_NAME
+    display_name = consts.DISPLAY_NAME
+    description = consts.DESCRIPTION
+    author = consts.AUTHOR
+    short_name = consts.SHORT_NAME
+    manager_url = consts.MANAGER_URL
 
-    version = VERSION
-    janeway_version = JANEWAY_VERSION
+    version = consts.VERSION
+    janeway_version = consts.JANEWAY_VERSION
 
 
 def install():
@@ -49,7 +41,7 @@ def install():
         # Create the export folder.
         try:
             logger.info(logger_messages.export_folder_creating())
-            os.makedirs(logger_messages.EXPORT_FILE_PATH)
+            os.makedirs(consts.EXPORT_FILE_PATH)
         except FileExistsError:
             logger.info(logger_messages.export_folder_created())
             pass
@@ -57,7 +49,7 @@ def install():
         # Create the import folder.
         try:
             logger.info(logger_messages.import_folder_creating())
-            os.makedirs(logger_messages.IMPORT_FILE_PATH)
+            os.makedirs(consts.IMPORT_FILE_PATH)
         except FileExistsError:
             logger.info(logger_messages.import_folder_created())
             pass

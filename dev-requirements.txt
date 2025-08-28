@@ -1,0 +1,2 @@
+hypothesis==6.138.7
+pytest==8.4.1
