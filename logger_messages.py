@@ -5,7 +5,13 @@ __author__ = "Rosetta Reatherford"
 __license__ = "AGPL v3"
 __maintainer__ = "The Public Library of Science (PLOS)"
 
-from plugins.editorial_manager_transfer_service.plugin_settings import PLUGIN_NAME, EXPORT_FILE_PATH, IMPORT_FILE_PATH
+import os
+
+from django.conf import settings
+
+PLUGIN_NAME = 'Editorial Manager Transfer Service Plugin'
+EXPORT_FILE_PATH = os.path.join(settings.BASE_DIR, 'files', 'plugins', 'editorial-manager-transfer-service', 'export')
+IMPORT_FILE_PATH = os.path.join(settings.BASE_DIR, 'files', 'plugins', 'editorial-manager-transfer-service', 'import')
 
 
 def plugin_installation_beginning() -> str:

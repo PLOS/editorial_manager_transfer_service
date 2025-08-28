@@ -7,13 +7,11 @@ __maintainer__ = "The Public Library of Science (PLOS)"
 
 import os
 
-from django.conf import settings
-
-import logger_messages
+import plugins.editorial_manager_transfer_service.logger_messages as logger_messages
 from utils import plugins
 from utils.logger import get_logger
 
-PLUGIN_NAME = 'Editorial Manager Transfer Service Plugin'
+PLUGIN_NAME = logger_messages.PLUGIN_NAME
 DISPLAY_NAME = 'Editorial Manager Transfer Service'
 DESCRIPTION = 'A plugin to provide information for Aries\' Editorial Manager to enable automatic transfers.'
 AUTHOR = 'PLOS'
@@ -21,9 +19,6 @@ VERSION = '0.1'
 SHORT_NAME = 'editorial_manager_transfer_service'
 MANAGER_URL = 'editorial_manager_transfer_service_manager'
 JANEWAY_VERSION = "1.8.0"
-
-EXPORT_FILE_PATH = os.path.join(settings.BASE_DIR, 'files', 'plugins', 'editorial-manager-transfer-service', 'export')
-IMPORT_FILE_PATH = os.path.join(settings.BASE_DIR, 'files', 'plugins', 'editorial-manager-transfer-service', 'import')
 
 logger = get_logger(__name__)
 
@@ -54,7 +49,7 @@ def install():
         # Create the export folder.
         try:
             logger.info(logger_messages.export_folder_creating())
-            os.makedirs(EXPORT_FILE_PATH)
+            os.makedirs(logger_messages.EXPORT_FILE_PATH)
         except FileExistsError:
             logger.info(logger_messages.export_folder_created())
             pass
@@ -62,7 +57,7 @@ def install():
         # Create the import folder.
         try:
             logger.info(logger_messages.import_folder_creating())
-            os.makedirs(IMPORT_FILE_PATH)
+            os.makedirs(logger_messages.IMPORT_FILE_PATH)
         except FileExistsError:
             logger.info(logger_messages.import_folder_created())
             pass
