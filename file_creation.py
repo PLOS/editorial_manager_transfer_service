@@ -12,10 +12,9 @@ import zipfile
 from collections.abc import Sequence
 from typing import List
 
-import logger_messages
+import plugins.editorial_manager_transfer_service.logger_messages as logger_messages
 from core.models import File
 from journal.models import Journal
-from plugins.editorial_manager_transfer_service.plugin_settings import EXPORT_FILE_PATH
 from submission.models import Article
 from utils import setting_handler
 from utils.logger import get_logger
@@ -29,8 +28,8 @@ def get_article_export_folders() -> List[str]:
 
     :return: A list of filepaths for the export folders.
     """
-    if os.path.exists(EXPORT_FILE_PATH):
-        return os.listdir(EXPORT_FILE_PATH)
+    if os.path.exists(logger_messages.EXPORT_FILE_PATH):
+        return os.listdir(logger_messages.EXPORT_FILE_PATH)
     else:
         return []
 
