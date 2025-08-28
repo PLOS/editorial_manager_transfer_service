@@ -5,13 +5,7 @@ __author__ = "Rosetta Reatherford"
 __license__ = "AGPL v3"
 __maintainer__ = "The Public Library of Science (PLOS)"
 
-import os
-
-from django.conf import settings
-
-PLUGIN_NAME = 'Editorial Manager Transfer Service Plugin'
-EXPORT_FILE_PATH = os.path.join(settings.BASE_DIR, 'files', 'plugins', 'editorial-manager-transfer-service', 'export')
-IMPORT_FILE_PATH = os.path.join(settings.BASE_DIR, 'files', 'plugins', 'editorial-manager-transfer-service', 'import')
+from plugins.editorial_manager_transfer_service.consts import PLUGIN_NAME, EXPORT_FILE_PATH, IMPORT_FILE_PATH
 
 
 def plugin_installation_beginning() -> str:
@@ -88,7 +82,7 @@ def process_failed_fetching_article(article_id: str) -> str:
     return "Fetching article from database (ID: {0}) failed. Discontinuing export process.".format(article_id)
 
 
-def process_failed_fetching_metadata(article_id):
+def process_failed_fetching_metadata(article_id) -> str:
     """
     Gets the log message for when an article's metadata failed to be fetched.
     :param: article_id: The ID of the article being fetched.
@@ -97,7 +91,7 @@ def process_failed_fetching_metadata(article_id):
     return "Fetching article (ID: {0}) metadata failed. Discontinuing export process.".format(article_id)
 
 
-def process_failed_fetching_article_files(article_id):
+def process_failed_fetching_article_files(article_id) -> str:
     """
     Gets the log message for when an article's files failed to be fetched.
     :param: article_id: The ID of the article being fetched.
@@ -106,10 +100,26 @@ def process_failed_fetching_article_files(article_id):
     return "Fetching files for article (ID: {0}) failed. Discontinuing export process.".format(article_id)
 
 
-def process_failed_fetching_journal(article_id):
+def process_failed_fetching_journal(article_id) -> str:
     """
     Gets the log message for when an article's journal failed to be fetched.
     :param: article_id: The ID of the article.
     :return: The logger message.
      """
     return "Fetching journal where article (ID: {0}) lives failed. Discontinuing export process.".format(article_id)
+
+
+def process_failed_no_article_id_provided() -> str:
+    """
+    Gets the log message for when an article ID was not provided.
+    :return: The logger message.
+    """
+    return "No article ID provided. Discontinuing export process."
+
+
+def export_process_failed_no_export_folder() -> str:
+    """
+    Gets the log message for when an export folder was not created.
+    :return: The logger message.
+    """
+    return "No export folder provided. Discontinuing export process."

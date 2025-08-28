@@ -12,6 +12,9 @@ import zipfile
 from collections.abc import Sequence
 from typing import List
 
+from django.core.exceptions import ObjectDoesNotExist
+
+import plugins.editorial_manager_transfer_service.consts as consts
 import plugins.editorial_manager_transfer_service.logger_messages as logger_messages
 from core.models import File
 from journal.models import Journal
@@ -22,16 +25,16 @@ from utils.logger import get_logger
 logger = get_logger(__name__)
 
 
-def get_article_export_folders() -> List[str]:
+def get_article_export_folders() -> str:
     """
     Gets the filepaths for the folders used for exporting articles.
 
     :return: A list of filepaths for the export folders.
     """
-    if os.path.exists(logger_messages.EXPORT_FILE_PATH):
-        return os.listdir(logger_messages.EXPORT_FILE_PATH)
+    if os.path.exists(consts.EXPORT_FILE_PATH):
+        return consts.EXPORT_FILE_PATH
     else:
-        return []
+        return ""
 
 
 class ExportFileCreation:
@@ -43,6 +46,19 @@ class ExportFileCreation:
         self.zip_filepath: str | None = None
         self.go_filepath: str | None = None
         self.in_error_state: bool = False
+        self.__license_code: str | None = None
+        self.__journal_code: str | None = None
+        self.__submission_partner_code: str | None = None
+        self.article_id: str | None = article_id.strip() if article_id else None
+        self.article: Article | None = None
+        self.journal: Journal | None = None
+        self.export_folder: str | None = None
+
+        # If no article ID, return an error.
+        if not self.article_id or len(self.article_id) <= 0:
+            logger.error(logger_messages.process_failed_no_article_id_provided())
+            self.in_error_state = True
+            return
 
         # Get the article based upon the given article ID.
         logger.info(logger_messages.process_fetching_article(article_id))
@@ -60,19 +76,15 @@ class ExportFileCreation:
             self.in_error_state = True
             return
 
-        self.license_code: str = setting_handler.get_setting(
-            setting_group_name="plugin:editorial_manager_transfer_service", setting_name="license_code",
-            journal=self.journal, ).processed_value
-        self.journal_code: str = setting_handler.get_setting(
-            setting_group_name="plugin:editorial_manager_transfer_service", setting_name="journal_code",
-            journal=self.journal, ).processed_value
-        self.submission_partner_code: str = setting_handler.get_setting(
-            setting_group_name="plugin:editorial_manager_transfer_service", setting_name="submission_partner_code",
-            journal=self.journal, ).processed_value
+        # Get the export folder.
+        export_folders: str = get_article_export_folders()
+        if len(export_folders) <= 0:
+            logger.error(logger_messages.export_process_failed_no_export_folder())
+            self.in_error_state = True
+            return
+        self.export_folder = export_folders
 
-        export_folders: Sequence[str] = get_article_export_folders()
-        self.export_folder: str | None = export_folders[0] if len(export_folders) > 0 else None
-
+        # Start export process
         self.__create_export_file()
 
     def get_zip_filepath(self) -> str | None:
@@ -102,33 +114,89 @@ class ExportFileCreation:
         Creates the export file for
         """
 
-        article_id: str = self.article.pk
-
-        # Attempt to create the metadata file.
-        metadata_file: File | None = self.__create_metadata_file(self.article)
-        if metadata_file is None:
-            logger.error(logger_messages.process_failed_fetching_metadata(article_id))
+        if not self.can_export():
             self.in_error_state = True
             return
+
+        # TODO: Attempt to create the metadata file.
+        # metadata_file: File | None = self.__create_metadata_file(self.article)
+        # if metadata_file is None:
+        #     logger.error(logger_messages.process_failed_fetching_metadata(self.article_id))
+        #     self.in_error_state = True
+        #     return
 
         # Attempt to fetch the article files.
-        article_files: Sequence[File] = self.fetch_article_files(self.article)
+        article_files: Sequence[File] = self.__fetch_article_files(self.article)
         if len(article_files) <= 0:
-            logger.error(logger_messages.process_failed_fetching_article_files(article_id))
+            logger.error(logger_messages.process_failed_fetching_article_files(self.article_id))
             self.in_error_state = True
             return
 
-        prefix: str = "{0}_{1}".format(self.submission_partner_code, uuid.uuid4())
+        prefix: str = "{0}_{1}".format(self.get_submission_partner_code(), uuid.uuid4())
 
         self.zip_filepath: str = os.path.join(self.export_folder, "{0}.zip".format(prefix))
         with zipfile.ZipFile(self.zip_filepath, "w") as zipf:
-            zipf.write(metadata_file.get_file_path(self.article))
+            # TODO: zipf.write(metadata_file.get_file_path(self.article))
             for article_file in article_files:
                 zipf.write(article_file.get_file_path(self.article))
             filenames: Sequence[str] = zipf.namelist()
             zipf.close()
 
-        self.__create_go_xml_file(metadata_file.uuid_filename, filenames, prefix)
+        # TODO: Remove below and replace with 'self.__create_go_xml_file(metadata_file.uuid_filename, filenames, prefix)'
+        self.__create_go_xml_file("fake name", filenames, prefix)
+
+    def get_license_code(self) -> str:
+        """
+        Gets the license code for exporting files.
+        :return: The license code or None, if the process failed.
+        """
+        if not self.__license_code:
+            self.__license_code: str = self.get_setting(consts.PLUGIN_SETTINGS_LICENSE_CODE)
+        return self.__license_code
+
+    def get_journal_code(self) -> str:
+        """
+        Gets the journal code for exporting files.
+        :return: The journal code or None, if the process failed.
+        """
+        if not self.__journal_code:
+            self.__journal_code: str = self.get_setting(consts.PLUGIN_SETTINGS_JOURNAL_CODE)
+        return self.__journal_code
+
+    def get_submission_partner_code(self) -> str:
+        """
+        Gets the submission partner code for exporting files.
+        :return: The submission partner code or None, if the process failed.
+        """
+        if not self.__submission_partner_code:
+            self.__submission_partner_code: str = self.get_setting(consts.PLUGIN_SETTINGS_SUBMISSION_PARTNER_CODE)
+        return self.__submission_partner_code
+
+    def can_export(self) -> bool:
+        """
+        Checks if the export file can be created.
+        :return: True if the export file can be created, False otherwise.
+        """
+        return (not self.in_error_state and
+                self.article is not None and
+                self.journal is not None and
+                self.get_license_code() is not None and
+                self.get_journal_code() is not None and
+                self.get_submission_partner_code() is not None)
+
+    def get_setting(self, setting_name: str) -> str:
+        """
+        Gets the setting for the given setting name.
+        :param setting_name: The name of the setting to get the value for.
+        :return: The value for the given setting or a blank string, if the process failed.
+        """
+        try:
+            return setting_handler.get_setting(setting_group_name=consts.PLUGIN_SETTINGS_GROUP_NAME,
+                                               setting_name=setting_name, journal=self.journal, ).processed_value
+        except ObjectDoesNotExist:
+            logger.error("Could not get the following setting, '{0}'".format(setting_name))
+            self.in_error_state = True
+            return ""
 
     def __create_go_xml_file(self, metadata_filename: str, article_filenames: Sequence[str], filename: str):
         """
@@ -137,19 +205,23 @@ class ExportFileCreation:
         :param article_filenames: The filenames of the article's associated files.
         :param filename: The name to use for the go.xml file (Must match the name of the zip file).
         """
-        go: ETree.Element = ETree.Element("GO")
-        go.set("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance")
-        go.set("xsi:noNamespaceSchemaLocation",
-               "app://Aries.EditorialManager/Resources/XmlDefineTransformFiles/aries_import_go_file.xsd")
+        if not self.can_export():
+            self.in_error_state = True
+            return
+
+        go: ETree.Element = ETree.Element(consts.GO_FILE_ELEMENT_TAG_GO)
+        go.set(consts.GO_FILE_GO_ELEMENT_ATTRIBUTE_XMLNS_XSI_KEY, consts.GO_FILE_GO_ELEMENT_ATTRIBUTE_XMLNS_XSI_VALUE)
+        go.set(consts.GO_FILE_GO_ELEMENT_ATTRIBUTE_SCHEMA_LOCATION_KEY,
+               consts.GO_FILE_GO_ELEMENT_ATTRIBUTE_SCHEMA_LOCATION_VALUE)
 
         # Format the header.
         header: ETree.Element = ETree.SubElement(go, "header")
         ETree.SubElement(header, "version", number="1.0")
-        ETree.SubElement(header, "journal", code=self.journal_code)
+        ETree.SubElement(header, "journal", code=self.get_journal_code())
         ETree.SubElement(header, "import-type", id="2")
         parameters: ETree.Element = ETree.SubElement(header, "parameters")
         ETree.SubElement(parameters, "parameter", name="license-code",
-                         value="{0}_{1}".format(self.submission_partner_code, self.license_code))
+                         value="{0}_{1}".format(self.get_submission_partner_code(), self.get_license_code()))
 
         # Begin the filegroup.
         filegroup: ETree.Element = ETree.SubElement(go, "filegroup")
@@ -180,10 +252,10 @@ class ExportFileCreation:
         :param article_id: The ID of the article.
         :return: The article object with the given article ID.
         """
-        return Article.get_article(article_id).get_deferred_fields()
+        return Article.get_article(article_id)
 
     @staticmethod
-    def fetch_article_files(article: Article) -> List[File]:
+    def __fetch_article_files(article: Article) -> List[File]:
         """
         Fetches the manuscript (or content or body) of an article alongside any other files associated with it.
         :param article: The article to fetch the manuscript files for.
