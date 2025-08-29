@@ -12,7 +12,7 @@ def get_plugin_settings(journal: Journal):
     :param journal: the journal
     """
 
-    logger.debug("Fetching journal settings for the following journal: %s", journal.id)
+    logger.debug("Fetching journal settings for the following journal: %s", journal.code)
     submission_partner_code = setting_handler.get_setting(
         setting_group_name=consts.PLUGIN_SETTINGS_GROUP_NAME,
         setting_name="submission_partner_code",
