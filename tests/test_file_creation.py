@@ -80,7 +80,6 @@ class TestFileCreation(unittest.TestCase):
         if not os.path.exists(EXPORT_FOLDER):
             try:
                 os.makedirs(EXPORT_FOLDER)
-                print("Created folder {}".format(EXPORT_FOLDER))
             except FileExistsError:
                 pass
 
