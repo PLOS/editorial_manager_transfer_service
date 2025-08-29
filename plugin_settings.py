@@ -10,9 +10,20 @@ import os
 import plugins.editorial_manager_transfer_service.consts as consts
 import plugins.editorial_manager_transfer_service.logger_messages as logger_messages
 from utils import plugins
+from utils.install import update_settings
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
+
+# Plugin Settings
+PLUGIN_NAME = consts.PLUGIN_NAME
+DISPLAY_NAME = consts.DISPLAY_NAME
+DESCRIPTION = consts.DESCRIPTION
+AUTHOR = consts.AUTHOR
+VERSION = consts.VERSION
+SHORT_NAME = consts.SHORT_NAME
+MANAGER_URL = consts.MANAGER_URL
+JANEWAY_VERSION = consts.JANEWAY_VERSION
 
 
 class EditorialManagerTransferServicePlugin(plugins.Plugin):
@@ -35,6 +46,9 @@ def install():
     Installs the Editorial Manager Transfer Service.
     """
     logger.info(logger_messages.plugin_installation_beginning())
+    update_settings(
+        file_path="plugins/editorial_manager_transfer_service/install/settings.json"
+    )
     plugin, created = EditorialManagerTransferServicePlugin.install()
 
     if created:
