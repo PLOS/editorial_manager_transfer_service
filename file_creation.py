@@ -142,6 +142,8 @@ class ExportFileCreation:
             filenames: Sequence[str] = zipf.namelist()
             zipf.close()
 
+        # Remove the manuscript
+
         # TODO: Remove below and replace with 'self.__create_go_xml_file(metadata_file.uuid_filename, filenames, prefix)'
         self.__create_go_xml_file("fake name", filenames, prefix)
 
@@ -215,23 +217,33 @@ class ExportFileCreation:
                consts.GO_FILE_GO_ELEMENT_ATTRIBUTE_SCHEMA_LOCATION_VALUE)
 
         # Format the header.
-        header: ETree.Element = ETree.SubElement(go, "header")
-        ETree.SubElement(header, "version", number="1.0")
-        ETree.SubElement(header, "journal", code=self.get_journal_code())
-        ETree.SubElement(header, "import-type", id="2")
-        parameters: ETree.Element = ETree.SubElement(header, "parameters")
-        ETree.SubElement(parameters, "parameter", name="license-code",
-                         value="{0}_{1}".format(self.get_submission_partner_code(), self.get_license_code()))
+        header: ETree.Element = ETree.SubElement(go, consts.GO_FILE_ELEMENT_TAG_HEADER)
+        version: ETree.Element = ETree.SubElement(header, consts.GO_FILE_ELEMENT_TAG_VERSION)
+        version.set(consts.GO_FILE_VERSION_ELEMENT_ATTRIBUTE_NUMBER_KEY,
+                    consts.GO_FILE_VERSION_ELEMENT_ATTRIBUTE_NUMBER_VALUE)
+        journal: ETree.Element = ETree.SubElement(header, consts.GO_FILE_ELEMENT_TAG_JOURNAL)
+        journal.set(consts.GO_FILE_JOURNAL_ELEMENT_ATTRIBUTE_CODE_KEY, self.get_license_code())
+        import_type: ETree.Element = ETree.SubElement(header, consts.GO_FILE_ELEMENT_TAG_IMPORT_TYPE)
+        import_type.set(consts.GO_FILE_IMPORT_TYPE_ELEMENT_ATTRIBUTE_ID_KEY,
+                        consts.GO_FILE_IMPORT_TYPE_ELEMENT_ATTRIBUTE_ID_VALUE)
+        parameters: ETree.Element = ETree.SubElement(header, consts.GO_FILE_ELEMENT_TAG_PARAMETERS)
+        parameter: ETree.Element = ETree.SubElement(parameters, consts.GO_FILE_ELEMENT_TAG_PARAMETER)
+        parameter.set(consts.GO_FILE_ATTRIBUTE_ELEMENT_NAME_KEY, consts.GO_FILE_PARAMETER_ELEMENT_NAME_VALUE)
+        parameter.set(consts.GO_FILE_PARAMETER_ELEMENT_VALUE_KEY,
+                      "{0}_{1}".format(self.get_submission_partner_code(), self.get_license_code()))
 
         # Begin the filegroup.
-        filegroup: ETree.Element = ETree.SubElement(go, "filegroup")
+        filegroup: ETree.Element = ETree.SubElement(go, consts.GO_FILE_ELEMENT_TAG_FILEGROUP)
 
         # Create the archive and metadata files.
-        ETree.SubElement(filegroup, "archive-file", name="{0}.zip".format(filename))
-        ETree.SubElement(filegroup, "metadata-file", name=metadata_filename)
+        archive_file: ETree.Element = ETree.SubElement(filegroup, consts.GO_FILE_ELEMENT_TAG_ARCHIVE_FILE)
+        archive_file.set(consts.GO_FILE_ATTRIBUTE_ELEMENT_NAME_KEY, "{0}.zip".format(filename))
+        metadata_file: ETree.Element = ETree.SubElement(filegroup, consts.GO_FILE_ELEMENT_TAG_METADATA_FILE)
+        metadata_file.set(consts.GO_FILE_ATTRIBUTE_ELEMENT_NAME_KEY, metadata_filename)
 
         for article_filename in article_filenames:
-            ETree.SubElement(filegroup, "file", name=article_filename)
+            file_tree = ETree.SubElement(filegroup, consts.GO_FILE_ELEMENT_TAG_FILE)
+            file_tree.set(consts.GO_FILE_ATTRIBUTE_ELEMENT_NAME_KEY, article_filename)
 
         tree = ETree.ElementTree(go)
         self.go_filepath = os.path.join(self.export_folder, "{0}.go.xml".format(filename))
