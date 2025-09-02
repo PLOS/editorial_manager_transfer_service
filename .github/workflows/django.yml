@@ -32,10 +32,9 @@ jobs:
         python-version: ${{ matrix.python-version }}
         cache: 'pip'
     - name: Install Dependencies
-      working-directory: /home/runner/work/editorial_manager_transfer_service/editorial_manager_transfer_service/janeway
       run: |
         python -m pip install --upgrade pip
         sudo find . -name "*requirements.txt" -type f -exec python -m pip install -r '{}' ';'
     - name: Run Tests
       run: |
-        pytest /home/runner/work/editorial_manager_transfer_service/editorial_manager_transfer_service/janeway/src/plugins/editorial_manager_transfer_service
+        python -m pytest /home/runner/work/editorial_manager_transfer_service/editorial_manager_transfer_service/janeway/src/plugins/editorial_manager_transfer_service
