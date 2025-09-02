@@ -37,11 +37,13 @@ jobs:
         find . -name "*requirements.txt" -type f -exec pip install -r '{}' ';'
     - name: Add `src` to Python Path
       run: |
-        echo "PYTHONPATH=\"/home/runner/work/editorial_manager_transfer_service/editorial_manager_transfer_service/janeway/src:$PYTHONPATH\"" >> $GITHUB_ENV
+        echo "PYTHONPATH=/home/runner/work/editorial_manager_transfer_service/editorial_manager_transfer_service/janeway/src" >> $GITHUB_ENV
+      shell: bash
     - name: Import the Default Janeway Settings
       run: |
-        cp /home/runner/work/editorial_manager_transfer_service/editorial_manager_transfer_service/janeway/src/core/janeway_global_settings.py /home/runner/work/editorial_manager_transfer_service/editorial_manager_transfer_service/janeway/src/core/settings.py
+        cp /home/runner/work/editorial_manager_transfer_service/editorial_manager_transfer_service/janeway/src/core/dev_settings.py /home/runner/work/editorial_manager_transfer_service/editorial_manager_transfer_service/janeway/src/core/settings.py
     - name: Run Tests
       working-directory: /home/runner/work/editorial_manager_transfer_service/editorial_manager_transfer_service/janeway
       run: |
         pytest /home/runner/work/editorial_manager_transfer_service/editorial_manager_transfer_service/janeway/src/plugins/editorial_manager_transfer_service
+      shell: cmd
