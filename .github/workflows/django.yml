@@ -19,7 +19,8 @@ jobs:
     - name: Fetch Main Janeway Branch
       uses: actions/checkout@v4
       with:
-        repository: PLOS/janeway/develop
+        repository: PLOS/janeway
+        ref: develop
     - name: Fetch Editorial Manager Transfer Service
       uses: actions/checkout@v4
       with:
