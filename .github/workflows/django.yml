@@ -16,7 +16,14 @@ jobs:
         python-version: [3.10.15]
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Fetch Main Janeway Branch
+      uses: actions/checkout@v4
+      with:
+        repository: PLOS/janeway/develop
+    - name: Fetch Editorial Manager Transfer Service
+      uses: actions/checkout@v4
+      with:
+        path: ./src/plugins
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v3
       with:
