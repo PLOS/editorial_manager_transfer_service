@@ -25,7 +25,7 @@ jobs:
     - name: Fetch Editorial Manager Transfer Service
       uses: actions/checkout@v4
       with:
-        path: /home/runner/work/editorial_manager_transfer_service/editorial_manager_transfer_service/janeway/src/plugins
+        path: /home/runner/work/editorial_manager_transfer_service/editorial_manager_transfer_service/janeway/src/plugins/editorial_manager_transfer_service
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v3
       with:
