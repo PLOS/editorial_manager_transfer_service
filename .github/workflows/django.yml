@@ -45,6 +45,7 @@ jobs:
     - name: Run Tests
       env:
         JANEWAY_SETTINGS_MODULE: core.settings
+        DJANGO_SETTINGS_MODULE: core.settings
       working-directory: /home/runner/work/editorial_manager_transfer_service/editorial_manager_transfer_service/janeway
       run: |
         pytest /home/runner/work/editorial_manager_transfer_service/editorial_manager_transfer_service/janeway/src/plugins/editorial_manager_transfer_service
