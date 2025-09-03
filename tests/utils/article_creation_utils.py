@@ -20,8 +20,10 @@ def _get_article_export_folders() -> str:
     return EXPORT_FOLDER
 
 
-def _get_journal() -> Journal:
-    return MagicMock(Journal)
+def _get_journal(code: str) -> Journal:
+    journal: Journal = MagicMock(Journal)
+    journal.code = code
+    return journal
 
 
 def _create_txt_file(filename: str) -> File:
@@ -40,12 +42,12 @@ def _create_txt_file(filename: str) -> File:
         return manuscript
 
 
-def _create_article(article_id: str, manuscript_filename: str, data_figure_filenames: Sequence[str]) -> Article:
+def _create_article(journal: Journal, article_id: str, manuscript_filename: str, data_figure_filenames: Sequence[str]) -> Article:
     manuscript: File = _create_txt_file(manuscript_filename)
 
     article: Article = MagicMock(Article)
     article.article_id = article_id
-    article.journal = _get_journal()
+    article.journal = journal
 
     # Handle the manuscript files.
     article.manuscript_files = MagicMock(File.objects)

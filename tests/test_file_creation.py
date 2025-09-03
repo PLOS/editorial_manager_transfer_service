@@ -13,6 +13,7 @@ from hypothesis.strategies import from_regex, SearchStrategy, lists
 import plugins.editorial_manager_transfer_service.consts as consts
 import plugins.editorial_manager_transfer_service.file_exporter as file_exporter
 import plugins.editorial_manager_transfer_service.tests.utils.article_creation_utils as article_utils
+from journal.models import Journal
 
 uuid4_regex = re.compile('^([a-z0-9]{8}(-[a-z0-9]{4}){3}-[a-z0-9]{12})$')
 valid_filename_regex = re.compile("^[\w\-. ]+$")
@@ -53,6 +54,7 @@ class TestFileCreation(unittest.TestCase):
     @patch.object(file_exporter.ExportFileCreation, 'get_setting', new=_get_setting)
     @patch('plugins.editorial_manager_transfer_service.file_exporter.get_article_export_folders',
            new=article_utils._get_article_export_folders)
+    @patch.object(Journal.objects, "get", new=article_utils._get_journal)
     @patch('submission.models.Article.get_article')
     @hypothesis_settings(max_examples=5)
     def test_regular_article_creation_process(self, mock_get_article, article_id: str, manuscript_filename: str,
@@ -62,11 +64,13 @@ class TestFileCreation(unittest.TestCase):
         :param mock_get_article: Mock the get_article method.
         :param article_id: The id of the article.
         """
+        journal_code = "TEST"
+
         # Set the return
-        mock_get_article.return_value = article_utils._create_article(article_id, manuscript_filename,
+        mock_get_article.return_value = article_utils._create_article(Journal.objects.get(code=journal_code), article_id, manuscript_filename,
                                                                       data_figure_filenames)
 
-        exporter = file_exporter.ExportFileCreation(article_id)
+        exporter = file_exporter.ExportFileCreation(journal_code, article_id)
         self.assertTrue(exporter.can_export())
         self.assertEqual(article_id.strip(), exporter.article_id)  # add assertion here
 

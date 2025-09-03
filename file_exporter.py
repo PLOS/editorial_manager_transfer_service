@@ -42,7 +42,7 @@ class ExportFileCreation:
     A class for managing the export file creation process.
     """
 
-    def __init__(self, article_id: str):
+    def __init__(self, journal_code: str, article_id: str):
         self.zip_filepath: str | None = None
         self.go_filepath: str | None = None
         self.in_error_state: bool = False
@@ -60,21 +60,22 @@ class ExportFileCreation:
             self.in_error_state = True
             return
 
+        # Attempt to get the journal.
+        try:
+            self.journal: Journal = Journal.objects.get(code=journal_code)
+        except Journal.DoesNotExist:
+            logger.error(logger_messages.process_failed_fetching_journal(article_id))
+            self.in_error_state = True
+            return
+
         # Get the article based upon the given article ID.
         logger.info(logger_messages.process_fetching_article(article_id))
         try:
-            self.article: Article = self.__fetch_article(article_id)
+            self.article: Article = self.__fetch_article(self.journal, article_id)
             if not self.article:
                 raise Article.DoesNotExist
         except Article.DoesNotExist:
             logger.error(logger_messages.process_failed_fetching_article(article_id))
-            self.in_error_state = True
-            return
-
-        # Attempt to get the journal.
-        self.journal: Journal = self.article.journal
-        if self.journal is None:
-            logger.error(logger_messages.process_failed_fetching_journal(article_id))
             self.in_error_state = True
             return
 
@@ -260,13 +261,14 @@ class ExportFileCreation:
         pass
 
     @staticmethod
-    def __fetch_article(article_id: str) -> Article:
+    def __fetch_article(journal: Journal, article_id: str) -> Article:
         """
         Gets the article object for the given article ID.
+        :param journal: The journal to fetch the article from.
         :param article_id: The ID of the article.
         :return: The article object with the given article ID.
         """
-        return Article.get_article(article_id)
+        return Article.get_article(journal, "id", article_id)
 
     @staticmethod
     def __fetch_article_files(article: Article) -> List[File]:
