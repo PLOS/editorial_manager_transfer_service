@@ -11,7 +11,7 @@ from hypothesis import settings as hypothesis_settings
 from hypothesis.strategies import from_regex, SearchStrategy, lists
 
 import plugins.editorial_manager_transfer_service.consts as consts
-import plugins.editorial_manager_transfer_service.file_exporter as file_creation
+import plugins.editorial_manager_transfer_service.file_exporter as file_exporter
 import plugins.editorial_manager_transfer_service.tests.utils.article_creation_utils as article_utils
 
 uuid4_regex = re.compile('^([a-z0-9]{8}(-[a-z0-9]{4}){3}-[a-z0-9]{12})$')
@@ -50,8 +50,8 @@ class TestFileCreation(unittest.TestCase):
 
     @given(article_id=from_regex(uuid4_regex), manuscript_filename=from_regex(valid_filename_regex),
            data_figure_filenames=valid_filenames)
-    @patch.object(file_creation.ExportFileCreation, 'get_setting', new=_get_setting)
-    @patch('plugins.editorial_manager_transfer_service.file_creation.get_article_export_folders',
+    @patch.object(file_exporter.ExportFileCreation, 'get_setting', new=_get_setting)
+    @patch('plugins.editorial_manager_transfer_service.file_exporter.get_article_export_folders',
            new=article_utils._get_article_export_folders)
     @patch('submission.models.Article.get_article')
     @hypothesis_settings(max_examples=5)
@@ -66,7 +66,7 @@ class TestFileCreation(unittest.TestCase):
         mock_get_article.return_value = article_utils._create_article(article_id, manuscript_filename,
                                                                       data_figure_filenames)
 
-        exporter = file_creation.ExportFileCreation(article_id)
+        exporter = file_exporter.ExportFileCreation(article_id)
         self.assertTrue(exporter.can_export())
         self.assertEqual(article_id.strip(), exporter.article_id)  # add assertion here
 
