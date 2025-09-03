@@ -11,7 +11,7 @@ from hypothesis import settings as hypothesis_settings
 from hypothesis.strategies import from_regex, SearchStrategy, lists
 
 import plugins.editorial_manager_transfer_service.consts as consts
-import plugins.editorial_manager_transfer_service.file_creation as file_creation
+import plugins.editorial_manager_transfer_service.file_exporter as file_creation
 import plugins.editorial_manager_transfer_service.tests.utils.article_creation_utils as article_utils
 
 uuid4_regex = re.compile('^([a-z0-9]{8}(-[a-z0-9]{4}){3}-[a-z0-9]{12})$')

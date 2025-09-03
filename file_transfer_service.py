@@ -8,7 +8,7 @@ __maintainer__ = "The Public Library of Science (PLOS)"
 import os
 from typing import List
 
-from plugins.editorial_manager_transfer_service.file_creation import ExportFileCreation
+from plugins.editorial_manager_transfer_service.file_exporter import ExportFileCreation
 from utils.logger import get_logger
 
 logger = get_logger(__name__)

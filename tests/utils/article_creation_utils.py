@@ -53,7 +53,7 @@ def _create_article(article_id: str, manuscript_filename: str, data_figure_filen
     manuscript_files.append(manuscript)
     article.manuscript_files.all.return_value = manuscript_files
 
-    # Handle the
+    # Handle the data figure files.
     article.data_figure_files = MagicMock(File.objects)
     data_figure_files: list[File] = list()
     for data_figure_filename in data_figure_filenames:

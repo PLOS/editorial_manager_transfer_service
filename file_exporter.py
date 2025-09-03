@@ -64,6 +64,8 @@ class ExportFileCreation:
         logger.info(logger_messages.process_fetching_article(article_id))
         try:
             self.article: Article = self.__fetch_article(article_id)
+            if not self.article:
+                raise Article.DoesNotExist
         except Article.DoesNotExist:
             logger.error(logger_messages.process_failed_fetching_article(article_id))
             self.in_error_state = True
