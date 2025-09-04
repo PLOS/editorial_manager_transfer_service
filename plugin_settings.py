@@ -1,31 +1,77 @@
+"""
+A plugin to provide information for Aries' Editorial Manager to enable automatic transfers.
+"""
+__author__ = "Rosetta Reatherford"
+__license__ = "AGPL v3"
+__maintainer__ = "The Public Library of Science (PLOS)"
+
+import os
+
+import plugins.editorial_manager_transfer_service.consts as consts
+import plugins.editorial_manager_transfer_service.logger_messages as logger_messages
 from utils import plugins
+from utils.install import update_settings
+from utils.logger import get_logger
 
-PLUGIN_NAME = 'Editorial Manager Transfer Service Plugin'
-DISPLAY_NAME = 'Editorial Manager Transfer Service'
-DESCRIPTION = 'A plugin to provide information for Aries' Editorial Manager to enable automatic transfers.'
-AUTHOR = 'PLOS'
-VERSION = '0.1'
-SHORT_NAME = 'editorial_manager_transfer_service'
-MANAGER_URL = 'editorial_manager_transfer_service_manager'
-JANEWAY_VERSION = "1.3.8"
+logger = get_logger(__name__)
 
+# Plugin Settings
+PLUGIN_NAME = consts.PLUGIN_NAME
+DISPLAY_NAME = consts.DISPLAY_NAME
+DESCRIPTION = consts.DESCRIPTION
+AUTHOR = consts.AUTHOR
+VERSION = consts.VERSION
+SHORT_NAME = consts.SHORT_NAME
+MANAGER_URL = consts.MANAGER_URL
+JANEWAY_VERSION = consts.JANEWAY_VERSION
 
 
 class EditorialManagerTransferServicePlugin(plugins.Plugin):
-    plugin_name = PLUGIN_NAME
-    display_name = DISPLAY_NAME
-    description = DESCRIPTION
-    author = AUTHOR
-    short_name = SHORT_NAME
-    manager_url = MANAGER_URL
+    """
+    The plugin class for the Editorial Manager Transfer Service.
+    """
+    plugin_name = consts.PLUGIN_NAME
+    display_name = consts.DISPLAY_NAME
+    description = consts.DESCRIPTION
+    author = consts.AUTHOR
+    short_name = consts.SHORT_NAME
+    manager_url = consts.MANAGER_URL
 
-    version = VERSION
-    janeway_version = JANEWAY_VERSION
-    
+    version = consts.VERSION
+    janeway_version = consts.JANEWAY_VERSION
 
 
 def install():
-    EditorialManagerTransferServicePlugin.install()
+    """
+    Installs the Editorial Manager Transfer Service.
+    """
+    logger.info(logger_messages.plugin_installation_beginning())
+    update_settings(
+        file_path="plugins/editorial_manager_transfer_service/install/settings.json"
+    )
+    plugin, created = EditorialManagerTransferServicePlugin.install()
+
+    if created:
+        # Create the export folder.
+        try:
+            logger.info(logger_messages.export_folder_creating())
+            os.makedirs(consts.EXPORT_FILE_PATH)
+        except FileExistsError:
+            logger.info(logger_messages.export_folder_created())
+            pass
+
+        # Create the import folder.
+        try:
+            logger.info(logger_messages.import_folder_creating())
+            os.makedirs(consts.IMPORT_FILE_PATH)
+        except FileExistsError:
+            logger.info(logger_messages.import_folder_created())
+            pass
+
+        # Log the plugin was installed.
+        logger.info(logger_messages.plugin_installed())
+    else:
+        logger.info(logger_messages.plugin_already_installed())
 
 
 def hook_registry():

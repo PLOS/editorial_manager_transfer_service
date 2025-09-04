@@ -1,15 +1,27 @@
 {% extends "admin/core/base.html" %}
 {% load foundation %}
 
-{% block title %}editorial_manager_transfer_service Manager{% endblock %}
+{% block title %}Editorial Manager Transfer Service Configuration{% endblock %}
 
 {% block body %}
-<div class="box">
-    <div class="title-area">
-        <h2>Management Form</h2>
-    </div>
-    <div class="content">
-        {{ form|foundation }}
-    </div>
+<div class="large-12 columns end">
+    <form method="POST">
+        {% csrf_token %}
+        <div class="box">
+            <div class="title-area">
+                <h2>Configuration</h2>
+            </div>
+            <div class="content">
+                {{ form|foundation }}
+            </div>
+            <div class="box">
+                <div class="row expanded">
+                    <div class="large-2 columns end">
+                        <input type="submit" value="Submit" class="button"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
 </div>
 {% endblock body %}

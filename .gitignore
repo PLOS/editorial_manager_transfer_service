@@ -1,1 +1,4 @@
 /.venv/
+/editorial_manager_transfer_service.iml
+/.idea/
+/.hypothesis/
