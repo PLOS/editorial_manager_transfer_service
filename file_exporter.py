@@ -44,14 +44,14 @@ class ExportFileCreation:
     A class for managing the export file creation process.
     """
 
-    def __init__(self, janeway_journal_code: str, article_id: str):
+    def __init__(self, janeway_journal_code: str, article_id: int | None) -> None:
         self.zip_filepath: str | None = None
         self.go_filepath: str | None = None
         self.in_error_state: bool = False
         self.__license_code: str | None = None
         self.__journal_code: str | None = None
         self.__submission_partner_code: str | None = None
-        self.article_id: str | None = article_id.strip() if article_id else None
+        self.article_id: int | None = article_id
         self.article: Article | None = None
         self.journal: Journal | None = None
         self.export_folder: str | None = None
@@ -247,7 +247,7 @@ class ExportFileCreation:
         """
         pass
 
-    def __fetch_article(self, journal: Journal | None, article_id: str | None) -> Article | None:
+    def __fetch_article(self, journal: Journal | None, article_id: int | None) -> Article | None:
         """
         Gets the article object for the given article ID.
         :param journal: The journal to fetch the article from.
@@ -255,7 +255,7 @@ class ExportFileCreation:
         :return: The article object with the given article ID.
         """
         # If no article ID or journal, return an error.
-        if not article_id or len(article_id) <= 0:
+        if not article_id or article_id <= 0:
             self.log_error(logger_messages.process_failed_no_article_id_provided())
             self.in_error_state = True
             return None
@@ -310,7 +310,8 @@ class ExportFileCreation:
         """
         Logs a success message in both the database and plaintext logs.
         """
-        TransferLogs.objects.create(journal=self.journal, article=self.article, message=logger_messages.export_process_succeeded(self.article_id),
+        TransferLogs.objects.create(journal=self.journal, article=self.article,
+                                    message=logger_messages.export_process_succeeded(self.article_id),
                                     message_type=TransferLogMessageType.EXPORT, success=True)
 
     @staticmethod

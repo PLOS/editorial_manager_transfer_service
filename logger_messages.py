@@ -64,7 +64,7 @@ def import_folder_created() -> str:
     return '{0} import folder already exists.'.format(PLUGIN_NAME)
 
 
-def process_fetching_article(article_id: str) -> str:
+def process_fetching_article(article_id: int) -> str:
     """
     Gets the log message for when an article is being fetched from the database.
     :param: article_id: The ID of the article being fetched.
@@ -73,7 +73,7 @@ def process_fetching_article(article_id: str) -> str:
     return "Fetching article from database (ID: {0})...".format(article_id)
 
 
-def process_finished_fetching_article(article_id: str) -> str:
+def process_finished_fetching_article(article_id: int) -> str:
     """
     Gets the log message for when an article is being fetched from the database.
     :param: article_id: The ID of the article being fetched.
@@ -82,7 +82,7 @@ def process_finished_fetching_article(article_id: str) -> str:
     return "Completed fetching article from database (ID: {0})...".format(article_id)
 
 
-def process_failed_fetching_article(article_id: str) -> str:
+def process_failed_fetching_article(article_id: int) -> str:
     """
     Gets the log message for when an article failed to be fetched.
     :param: article_id: The ID of the article being fetched.
@@ -116,7 +116,7 @@ def process_failed_fetching_journal(janway_journal_code: str) -> str:
     :return: The logger message.
     """
     return "Fetching journal from database (Code: {0}) failed. Discontinuing export process.".format(
-        janway_journal_code)
+            janway_journal_code)
 
 
 def process_failed_fetching_metadata(article_id) -> str:
@@ -169,14 +169,16 @@ def export_process_failed_no_export_folder() -> str:
     """
     return "No export folder provided. Discontinuing export process."
 
-def export_process_failed_ingest(article_id: str) -> str:
+
+def export_process_failed_ingest(article_id: int) -> str:
     """
     Gets the log message for when the article failed to be ingested into Editorial Manager.
     :return: The logger message.
     """
     return "Export process failed during ingest to Editorial Manager for article (ID: {0}).".format(article_id)
 
-def export_process_succeeded(article_id: str) -> str:
+
+def export_process_succeeded(article_id: int) -> str:
     """
     Gets the log message for when the export process was successful.
     :return: The logger message.
