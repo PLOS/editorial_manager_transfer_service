@@ -1,3 +1,7 @@
+__author__ = "Rosetta Reatherford"
+__license__ = "AGPL v3"
+__maintainer__ = "The Public Library of Science (PLOS)"
+
 import plugins.editorial_manager_transfer_service.consts as consts
 from journal.models import Journal
 from utils import setting_handler
