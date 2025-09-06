@@ -1,25 +1,27 @@
 import os
 import re
 import shutil
-import unittest
 import xml.etree.ElementTree as ElementTree
 from typing import Sequence
 from unittest.mock import patch
 
-from hypothesis import given
-from hypothesis import settings as hypothesis_settings
-from hypothesis.strategies import from_regex, SearchStrategy, lists
+import hypothesis.strategies as hypothesis_strategies
+from hypothesis import settings as hypothesis_settings, given
+from hypothesis.extra.django import TestCase
 
 import plugins.editorial_manager_transfer_service.consts as consts
 import plugins.editorial_manager_transfer_service.file_exporter as file_exporter
 import plugins.editorial_manager_transfer_service.tests.utils.article_creation_utils as article_utils
 from journal.models import Journal
+from plugins.editorial_manager_transfer_service.enums.transfer_log_message_type import TransferLogMessageType
+from plugins.editorial_manager_transfer_service.models import TransferLogs
 
 uuid4_regex = re.compile('^([a-z0-9]{8}(-[a-z0-9]{4}){3}-[a-z0-9]{12})$')
 valid_filename_regex = re.compile("^[\w\-. ]+$")
 
-valid_filenames: SearchStrategy[list[str]] = lists(from_regex(valid_filename_regex), unique=True, min_size=0,
-                                                   max_size=20)
+valid_filenames: hypothesis_strategies.SearchStrategy[list[str]] = hypothesis_strategies.lists(
+    hypothesis_strategies.from_regex(valid_filename_regex), unique=True, min_size=0,
+    max_size=20)
 
 
 def _get_setting(self, setting_name: str) -> str:
@@ -32,7 +34,7 @@ def _get_setting(self, setting_name: str) -> str:
             return "SUBMISSION_PARTNER"
 
 
-class TestFileCreation(unittest.TestCase):
+class TestFileCreation(TestCase):
     def setUp(self):
         """
         Sets up the export folder structure.
@@ -49,7 +51,8 @@ class TestFileCreation(unittest.TestCase):
         """
         shutil.rmtree(article_utils._get_article_export_folders())
 
-    @given(article_id=from_regex(uuid4_regex), manuscript_filename=from_regex(valid_filename_regex),
+    @given(article_id=hypothesis_strategies.from_regex(uuid4_regex),
+           manuscript_filename=hypothesis_strategies.from_regex(valid_filename_regex),
            data_figure_filenames=valid_filenames)
     @patch.object(file_exporter.ExportFileCreation, 'get_setting', new=_get_setting)
     @patch('plugins.editorial_manager_transfer_service.file_exporter.get_article_export_folders',
@@ -67,7 +70,8 @@ class TestFileCreation(unittest.TestCase):
         journal_code = "TEST"
 
         # Set the return
-        mock_get_article.return_value = article_utils._create_article(Journal.objects.get(code=journal_code), article_id, manuscript_filename,
+        mock_get_article.return_value = article_utils._create_article(Journal.objects.get(code=journal_code),
+                                                                      article_id, manuscript_filename,
                                                                       data_figure_filenames)
 
         exporter = file_exporter.ExportFileCreation(journal_code, article_id)
@@ -75,6 +79,21 @@ class TestFileCreation(unittest.TestCase):
         self.assertEqual(article_id.strip(), exporter.article_id)  # add assertion here
 
         self.__check_go_file(exporter.get_go_filepath(), len(data_figure_filenames) + 1)
+
+    @given(message=hypothesis_strategies.text(),
+           message_type=hypothesis_strategies.sampled_from(TransferLogMessageType.choices),
+           success=hypothesis_strategies.booleans())
+    def test_blank_transfer_logs(self, message: str, message_type: TransferLogMessageType, success: bool):
+        """
+        Tests creating an empty TransferLogs object.
+        """
+        TransferLogs.objects.create(
+                journal=None,
+                article=None,
+                message=message,
+                message_type=message_type,
+                success=success
+        )
 
     def __check_go_file(self, go_filepath: str, number_of_files: int) -> None:
         if not os.path.exists(go_filepath):
@@ -96,7 +115,3 @@ class TestFileCreation(unittest.TestCase):
 
         files: list[ElementTree.Element] = filegroup.findall(consts.GO_FILE_ELEMENT_TAG_FILE)
         self.assertEqual(number_of_files, len(files))
-
-
-if __name__ == '__main__':
-    unittest.main()

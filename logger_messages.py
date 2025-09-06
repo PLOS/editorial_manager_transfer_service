@@ -168,3 +168,17 @@ def export_process_failed_no_export_folder() -> str:
     :return: The logger message.
     """
     return "No export folder provided. Discontinuing export process."
+
+def export_process_failed_ingest(article_id: str) -> str:
+    """
+    Gets the log message for when the article failed to be ingested into Editorial Manager.
+    :return: The logger message.
+    """
+    return "Export process failed during ingest to Editorial Manager for article (ID: {0}).".format(article_id)
+
+def export_process_succeeded(article_id: str) -> str:
+    """
+    Gets the log message for when the export process was successful.
+    :return: The logger message.
+    """
+    return "Export process succeeded for article (ID: {0}).".format(article_id)

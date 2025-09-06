@@ -12,11 +12,14 @@ import zipfile
 from collections.abc import Sequence
 from typing import List
 
+from django.core.exceptions import ObjectDoesNotExist
+
 import plugins.editorial_manager_transfer_service.consts as consts
 import plugins.editorial_manager_transfer_service.logger_messages as logger_messages
 from core.models import File
-from django.core.exceptions import ObjectDoesNotExist
 from journal.models import Journal
+from plugins.editorial_manager_transfer_service.enums.transfer_log_message_type import TransferLogMessageType
+from plugins.editorial_manager_transfer_service.models import TransferLogs
 from submission.models import Article
 from utils import setting_handler
 from utils.logger import get_logger
@@ -66,7 +69,7 @@ class ExportFileCreation:
         # Get the export folder.
         export_folders: str = get_article_export_folders()
         if len(export_folders) <= 0:
-            logger.error(logger_messages.export_process_failed_no_export_folder())
+            self.log_error(logger_messages.export_process_failed_no_export_folder())
             self.in_error_state = True
             return
         self.export_folder = export_folders
@@ -115,7 +118,7 @@ class ExportFileCreation:
         # Attempt to fetch the article files.
         article_files: Sequence[File] = self.__fetch_article_files(self.article)
         if len(article_files) <= 0:
-            logger.error(logger_messages.process_failed_fetching_article_files(self.article_id))
+            self.log_error(logger_messages.process_failed_fetching_article_files(self.article_id))
             self.in_error_state = True
             return
 
@@ -183,7 +186,7 @@ class ExportFileCreation:
             return setting_handler.get_setting(setting_group_name=consts.PLUGIN_SETTINGS_GROUP_NAME,
                                                setting_name=setting_name, journal=self.journal, ).processed_value
         except ObjectDoesNotExist:
-            logger.error("Could not get the following setting, '{0}'".format(setting_name))
+            self.log_error("Could not get the following setting, '{0}'".format(setting_name))
             self.in_error_state = True
             return ""
 
@@ -244,8 +247,7 @@ class ExportFileCreation:
         """
         pass
 
-    @staticmethod
-    def __fetch_article(journal: Journal | None, article_id: str | None) -> Article | None:
+    def __fetch_article(self, journal: Journal | None, article_id: str | None) -> Article | None:
         """
         Gets the article object for the given article ID.
         :param journal: The journal to fetch the article from.
@@ -254,7 +256,7 @@ class ExportFileCreation:
         """
         # If no article ID or journal, return an error.
         if not article_id or len(article_id) <= 0:
-            logger.error(logger_messages.process_failed_no_article_id_provided())
+            self.log_error(logger_messages.process_failed_no_article_id_provided())
             self.in_error_state = True
             return None
 
@@ -265,13 +267,12 @@ class ExportFileCreation:
             article = Article.get_article(journal, "id", article_id)
             logger.debug(logger_messages.process_finished_fetching_article(article_id))
         except Article.DoesNotExist:
-            logger.error(logger_messages.process_failed_fetching_article(article_id))
+            self.log_error(logger_messages.process_failed_fetching_article(article_id))
             self.in_error_state = True
 
         return article
 
-    @staticmethod
-    def __fetch_journal(janeway_journal_code: str | None) -> Journal | None:
+    def __fetch_journal(self, janeway_journal_code: str | None) -> Journal | None:
         """
         Gets the journal from the database given the Janeway journal code.
         :param janeway_journal_code: The code of the Janeway journal to fetch.
@@ -279,7 +280,7 @@ class ExportFileCreation:
         """
         # If no journal code, return an error.
         if not janeway_journal_code or len(janeway_journal_code) <= 0:
-            logger.error(logger_messages.process_failed_no_janeway_journal_code_provided())
+            self.log_error(logger_messages.process_failed_no_janeway_journal_code_provided())
             self.in_error_state = True
             return None
 
@@ -288,13 +289,29 @@ class ExportFileCreation:
         # Attempt to get the journal.
         logger.debug(logger_messages.process_fetching_journal(janeway_journal_code))
         try:
-            journal = Journal.objects.get(code=journal_code)
+            journal = Journal.objects.get(code=janeway_journal_code)
             logger.debug(logger_messages.process_finished_fetching_journal(janeway_journal_code))
         except Journal.DoesNotExist:
-            logger.error(logger_messages.process_failed_fetching_journal(janeway_journal_code))
+            self.log_error(logger_messages.process_failed_fetching_journal(janeway_journal_code))
             self.in_error_state = True
 
         return journal
+
+    def log_error(self, message: str) -> None:
+        """
+        Logs the given error message in both the database and plaintext logs.
+        :param message: The message to log.
+        """
+        logger.error(message)
+        TransferLogs.objects.create(journal=self.journal, article=self.article, message=message,
+                                    message_type=TransferLogMessageType.EXPORT, success=False)
+
+    def log_success(self) -> None:
+        """
+        Logs a success message in both the database and plaintext logs.
+        """
+        TransferLogs.objects.create(journal=self.journal, article=self.article, message=logger_messages.export_process_succeeded(self.article_id),
+                                    message_type=TransferLogMessageType.EXPORT, success=True)
 
     @staticmethod
     def __fetch_article_files(article: Article) -> List[File]:
