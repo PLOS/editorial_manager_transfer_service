@@ -73,6 +73,15 @@ def process_fetching_article(article_id: str) -> str:
     return "Fetching article from database (ID: {0})...".format(article_id)
 
 
+def process_finished_fetching_article(article_id: str) -> str:
+    """
+    Gets the log message for when an article is being fetched from the database.
+    :param: article_id: The ID of the article being fetched.
+    :return: The logger message.
+    """
+    return "Completed fetching article from database (ID: {0})...".format(article_id)
+
+
 def process_failed_fetching_article(article_id: str) -> str:
     """
     Gets the log message for when an article failed to be fetched.
@@ -80,6 +89,34 @@ def process_failed_fetching_article(article_id: str) -> str:
     :return: The logger message.
     """
     return "Fetching article from database (ID: {0}) failed. Discontinuing export process.".format(article_id)
+
+
+def process_fetching_journal(janway_journal_code: str) -> str:
+    """
+    Gets the log message for when a journal is being fetched from the database.
+    :param: janway_journal_code: The code of the journal being fetched.
+    :return: The logger message.
+    """
+    return "Fetching journal from database (Code: {0})...".format(janway_journal_code)
+
+
+def process_finished_fetching_journal(janway_journal_code: str) -> str:
+    """
+    Gets the log message for when a journal is being fetched from the database.
+    :param: janway_journal_code: The code of the journal being fetched.
+    :return: The logger message.
+    """
+    return "Completed fetching journal from database (Code: {0})...".format(janway_journal_code)
+
+
+def process_failed_fetching_journal(janway_journal_code: str) -> str:
+    """
+    Gets the log message for when a journal failed to be fetched.
+    :param: janway_journal_code: The code of the journal being fetched.
+    :return: The logger message.
+    """
+    return "Fetching journal from database (Code: {0}) failed. Discontinuing export process.".format(
+        janway_journal_code)
 
 
 def process_failed_fetching_metadata(article_id) -> str:
@@ -115,6 +152,14 @@ def process_failed_no_article_id_provided() -> str:
     :return: The logger message.
     """
     return "No article ID provided. Discontinuing export process."
+
+
+def process_failed_no_janeway_journal_code_provided() -> str:
+    """
+    Gets the log message for when no journal code was provided.
+    :return: The logger message.
+    """
+    return "No Janeway journal code was provided. Discontinuing export process."
 
 
 def export_process_failed_no_export_folder() -> str:
