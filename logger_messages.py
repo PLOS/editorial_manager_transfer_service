@@ -170,12 +170,26 @@ def export_process_failed_no_export_folder() -> str:
     return "No export folder provided. Discontinuing export process."
 
 
-def export_process_failed_ingest(article_id: int) -> str:
+def __export_process_failed_ingest(article_id: str) -> str:
     """
     Gets the log message for when the article failed to be ingested into Editorial Manager.
+    :param article_id: The ID of the article being fetched.
     :return: The logger message.
     """
-    return "Export process failed during ingest to Editorial Manager for article (ID: {0}).".format(article_id)
+    "Export process failed during ingest to Editorial Manager for article (ID: {0})".format(article_id)
+
+
+def export_process_failed_ingest(article_id: str, error_message: str = None) -> str:
+    """
+    Gets the log message for when the article failed to be ingested into Editorial Manager.
+    :param article_id: The ID of the article being fetched.
+    :param error_message: The error message to be logged.
+    :param error: The exception to be logged.
+    :return: The logger message.
+    """
+    if error_message:
+        return error_message
+    return __export_process_failed_ingest(article_id)
 
 
 def export_process_succeeded(article_id: int) -> str:
@@ -184,3 +198,12 @@ def export_process_succeeded(article_id: int) -> str:
     :return: The logger message.
     """
     return "Export process succeeded for article (ID: {0}).".format(article_id)
+
+
+def excport_process_failed_delete_file(filepath: str) -> str:
+    """
+    Gets the log message for when an export file failed to be deleted.
+    :param filepath: The path to the export file.
+    :return: The logger message.
+    """
+    return "Export process failed to delete file at filepath: {0}.".format(filepath)

@@ -185,8 +185,8 @@ class ExportFileCreation:
         try:
             return setting_handler.get_setting(setting_group_name=consts.PLUGIN_SETTINGS_GROUP_NAME,
                                                setting_name=setting_name, journal=self.journal, ).processed_value
-        except ObjectDoesNotExist:
-            self.log_error("Could not get the following setting, '{0}'".format(setting_name))
+        except ObjectDoesNotExist as e:
+            self.log_error("Could not get the following setting, '{0}'".format(setting_name), e)
             self.in_error_state = True
             return ""
 
@@ -212,7 +212,7 @@ class ExportFileCreation:
         version.set(consts.GO_FILE_VERSION_ELEMENT_ATTRIBUTE_NUMBER_KEY,
                     consts.GO_FILE_VERSION_ELEMENT_ATTRIBUTE_NUMBER_VALUE)
         journal: ETree.Element = ETree.SubElement(header, consts.GO_FILE_ELEMENT_TAG_JOURNAL)
-        journal.set(consts.GO_FILE_JOURNAL_ELEMENT_ATTRIBUTE_CODE_KEY, self.get_license_code())
+        journal.set(consts.GO_FILE_JOURNAL_ELEMENT_ATTRIBUTE_CODE_KEY, self.get_journal_code())
         import_type: ETree.Element = ETree.SubElement(header, consts.GO_FILE_ELEMENT_TAG_IMPORT_TYPE)
         import_type.set(consts.GO_FILE_IMPORT_TYPE_ELEMENT_ATTRIBUTE_ID_KEY,
                         consts.GO_FILE_IMPORT_TYPE_ELEMENT_ATTRIBUTE_ID_VALUE)
@@ -266,8 +266,8 @@ class ExportFileCreation:
         try:
             article = Article.get_article(journal, "id", article_id)
             logger.debug(logger_messages.process_finished_fetching_article(article_id))
-        except Article.DoesNotExist:
-            self.log_error(logger_messages.process_failed_fetching_article(article_id))
+        except Article.DoesNotExist as e:
+            self.log_error(logger_messages.process_failed_fetching_article(article_id), e)
             self.in_error_state = True
 
         return article
@@ -291,17 +291,19 @@ class ExportFileCreation:
         try:
             journal = Journal.objects.get(code=janeway_journal_code)
             logger.debug(logger_messages.process_finished_fetching_journal(janeway_journal_code))
-        except Journal.DoesNotExist:
-            self.log_error(logger_messages.process_failed_fetching_journal(janeway_journal_code))
+        except Journal.DoesNotExist as e:
+            self.log_error(logger_messages.process_failed_fetching_journal(janeway_journal_code), e)
             self.in_error_state = True
 
         return journal
 
-    def log_error(self, message: str) -> None:
+    def log_error(self, message: str, error: Exception = None) -> None:
         """
         Logs the given error message in both the database and plaintext logs.
         :param message: The message to log.
+        :param error: The exception, if there is one.
         """
+        logger.exception(error)
         logger.error(message)
         TransferLogs.objects.create(journal=self.journal, article=self.article, message=message,
                                     message_type=TransferLogMessageType.EXPORT, success=False)
