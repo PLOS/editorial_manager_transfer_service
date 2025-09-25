@@ -4,6 +4,7 @@ __maintainer__ = "The Public Library of Science (PLOS)"
 
 from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import render
+from django.contrib import messages
 
 from plugins.editorial_manager_transfer_service import forms
 from plugins.editorial_manager_transfer_service.logic import get_plugin_settings, save_plugin_settings
@@ -36,6 +37,18 @@ def manager(request):
                 license_code,
                 journal_code,
                 request,
+            )
+
+            messages.add_message(
+                request,
+                messages.SUCCESS,
+                'Form saved.',
+            )
+        else:
+            messages.add_message(
+                request,
+                messages.ERROR,
+                'Error saving form.',
             )
 
     else:
