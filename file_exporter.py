@@ -18,6 +18,8 @@ import plugins.editorial_manager_transfer_service.consts as consts
 import plugins.editorial_manager_transfer_service.logger_messages as logger_messages
 from core.models import File
 from journal.models import Journal
+from plugins.editorial_manager_transfer_service.enums.transfer_log_message_type import TransferLogMessageType
+from plugins.editorial_manager_transfer_service.models import TransferLogs
 from submission.models import Article
 from utils import setting_handler
 from utils.logger import get_logger
@@ -42,47 +44,32 @@ class ExportFileCreation:
     A class for managing the export file creation process.
     """
 
-    def __init__(self, journal_code: str, article_id: str):
+    def __init__(self, janeway_journal_code: str, article_id: int | None) -> None:
         self.zip_filepath: str | None = None
         self.go_filepath: str | None = None
         self.in_error_state: bool = False
         self.__license_code: str | None = None
         self.__journal_code: str | None = None
         self.__submission_partner_code: str | None = None
-        self.article_id: str | None = article_id.strip() if article_id else None
+        self.article_id: int | None = article_id
         self.article: Article | None = None
         self.journal: Journal | None = None
         self.export_folder: str | None = None
 
-        # If no article ID, return an error.
-        if not self.article_id or len(self.article_id) <= 0:
-            logger.error(logger_messages.process_failed_no_article_id_provided())
-            self.in_error_state = True
-            return
-
-        # Attempt to get the journal.
-        try:
-            self.journal: Journal = Journal.objects.get(code=journal_code)
-        except Journal.DoesNotExist:
-            logger.error(logger_messages.process_failed_fetching_journal(article_id))
-            self.in_error_state = True
+        # Gets the journal
+        self.journal: Journal | None = self.__fetch_journal(janeway_journal_code)
+        if self.in_error_state:
             return
 
         # Get the article based upon the given article ID.
-        logger.info(logger_messages.process_fetching_article(article_id))
-        try:
-            self.article: Article = self.__fetch_article(self.journal, article_id)
-            if not self.article:
-                raise Article.DoesNotExist
-        except Article.DoesNotExist:
-            logger.error(logger_messages.process_failed_fetching_article(article_id))
-            self.in_error_state = True
+        self.article: Article | None = self.__fetch_article(self.journal, article_id)
+        if self.in_error_state:
             return
 
         # Get the export folder.
         export_folders: str = get_article_export_folders()
         if len(export_folders) <= 0:
-            logger.error(logger_messages.export_process_failed_no_export_folder())
+            self.log_error(logger_messages.export_process_failed_no_export_folder())
             self.in_error_state = True
             return
         self.export_folder = export_folders
@@ -131,7 +118,7 @@ class ExportFileCreation:
         # Attempt to fetch the article files.
         article_files: Sequence[File] = self.__fetch_article_files(self.article)
         if len(article_files) <= 0:
-            logger.error(logger_messages.process_failed_fetching_article_files(self.article_id))
+            self.log_error(logger_messages.process_failed_fetching_article_files(self.article_id))
             self.in_error_state = True
             return
 
@@ -198,8 +185,8 @@ class ExportFileCreation:
         try:
             return setting_handler.get_setting(setting_group_name=consts.PLUGIN_SETTINGS_GROUP_NAME,
                                                setting_name=setting_name, journal=self.journal, ).processed_value
-        except ObjectDoesNotExist:
-            logger.error("Could not get the following setting, '{0}'".format(setting_name))
+        except ObjectDoesNotExist as e:
+            self.log_error("Could not get the following setting, '{0}'".format(setting_name), e)
             self.in_error_state = True
             return ""
 
@@ -225,7 +212,7 @@ class ExportFileCreation:
         version.set(consts.GO_FILE_VERSION_ELEMENT_ATTRIBUTE_NUMBER_KEY,
                     consts.GO_FILE_VERSION_ELEMENT_ATTRIBUTE_NUMBER_VALUE)
         journal: ETree.Element = ETree.SubElement(header, consts.GO_FILE_ELEMENT_TAG_JOURNAL)
-        journal.set(consts.GO_FILE_JOURNAL_ELEMENT_ATTRIBUTE_CODE_KEY, self.get_license_code())
+        journal.set(consts.GO_FILE_JOURNAL_ELEMENT_ATTRIBUTE_CODE_KEY, self.get_journal_code())
         import_type: ETree.Element = ETree.SubElement(header, consts.GO_FILE_ELEMENT_TAG_IMPORT_TYPE)
         import_type.set(consts.GO_FILE_IMPORT_TYPE_ELEMENT_ATTRIBUTE_ID_KEY,
                         consts.GO_FILE_IMPORT_TYPE_ELEMENT_ATTRIBUTE_ID_VALUE)
@@ -260,15 +247,74 @@ class ExportFileCreation:
         """
         pass
 
-    @staticmethod
-    def __fetch_article(journal: Journal, article_id: str) -> Article:
+    def __fetch_article(self, journal: Journal | None, article_id: int | None) -> Article | None:
         """
         Gets the article object for the given article ID.
         :param journal: The journal to fetch the article from.
         :param article_id: The ID of the article.
         :return: The article object with the given article ID.
         """
-        return Article.get_article(journal, "id", article_id)
+        # If no article ID or journal, return an error.
+        if not article_id or article_id <= 0:
+            self.log_error(logger_messages.process_failed_no_article_id_provided())
+            self.in_error_state = True
+            return None
+
+        article: Article | None = None
+
+        logger.debug(logger_messages.process_fetching_article(article_id))
+        try:
+            article = Article.get_article(journal, "id", article_id)
+            logger.debug(logger_messages.process_finished_fetching_article(article_id))
+        except Article.DoesNotExist as e:
+            self.log_error(logger_messages.process_failed_fetching_article(article_id), e)
+            self.in_error_state = True
+
+        return article
+
+    def __fetch_journal(self, janeway_journal_code: str | None) -> Journal | None:
+        """
+        Gets the journal from the database given the Janeway journal code.
+        :param janeway_journal_code: The code of the Janeway journal to fetch.
+        :return: The journal object with the given Janeway journal code, if there is one. None otherwise.
+        """
+        # If no journal code, return an error.
+        if not janeway_journal_code or len(janeway_journal_code) <= 0:
+            self.log_error(logger_messages.process_failed_no_janeway_journal_code_provided())
+            self.in_error_state = True
+            return None
+
+        journal: Journal | None = None
+
+        # Attempt to get the journal.
+        logger.debug(logger_messages.process_fetching_journal(janeway_journal_code))
+        try:
+            journal = Journal.objects.get(code=janeway_journal_code)
+            logger.debug(logger_messages.process_finished_fetching_journal(janeway_journal_code))
+        except Journal.DoesNotExist as e:
+            self.log_error(logger_messages.process_failed_fetching_journal(janeway_journal_code), e)
+            self.in_error_state = True
+
+        return journal
+
+    def log_error(self, message: str, error: Exception = None) -> None:
+        """
+        Logs the given error message in both the database and plaintext logs.
+        :param message: The message to log.
+        :param error: The exception, if there is one.
+        """
+        logger.exception(error)
+        logger.error(message)
+        TransferLogs.objects.create(journal=self.journal, article=self.article, message=message,
+                                    message_type=TransferLogMessageType.EXPORT, success=False)
+
+    def log_success(self) -> None:
+        """
+        Logs a success message in both the database and plaintext logs.
+        """
+        TransferLogs.objects.create(journal=self.journal, article=self.article,
+                                    message=logger_messages.export_process_succeeded(self.article_id),
+                                    message_type=TransferLogMessageType.EXPORT, success=True)
 
     @staticmethod
     def __fetch_article_files(article: Article) -> List[File]:

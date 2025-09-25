@@ -1,3 +1,7 @@
+__author__ = "Rosetta Reatherford"
+__license__ = "AGPL v3"
+__maintainer__ = "The Public Library of Science (PLOS)"
+
 from django import forms
 
 

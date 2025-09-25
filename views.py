@@ -1,3 +1,7 @@
+__author__ = "Rosetta Reatherford"
+__license__ = "AGPL v3"
+__maintainer__ = "The Public Library of Science (PLOS)"
+
 from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import render
 
