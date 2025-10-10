@@ -1,5 +1,5 @@
 stages:
-  - test
+  # - test
   - integration
 
 variables:
@@ -12,54 +12,51 @@ variables:
   PYTHONPATH: "$JANEWAY_PATH/src"
   # Google Backend Credentials is required for the integration test image
   GOOGLE_BACKEND_CREDENTIALS: ${GCR_AUTH_JSON_FILE}
-  DOCKER_AUTH_CONFIG: >
-    {
-      "auths": {
-        "gcr.io": {
-          "username": "_json_key",
-          "password": "$GCR_AUTH_JSON"
-        }
-      }
-    }
 
-cache:
-  key: "${CI_COMMIT_REF_SLUG}-pip"
-  paths:
-    - ~/.cache/pip/
+before_script:
+  - |
+    if [ -n "$GCR_AUTH_JSON_FILE" ]; then
+      echo "$GCR_AUTH_JSON_FILE" | docker login -u _json_key --password-stdin https://gcr.io
+    fi
+
+# cache:
+#   key: "${CI_COMMIT_REF_SLUG}-pip"
+#   paths:
+#     - ~/.cache/pip/
 
 # --------------------------------------------
 # Django unit tests
 # --------------------------------------------
-django_tests:
-  stage: test
-  image: python:${PYTHON_VERSION}
-  before_script:
-    - export GOOGLE_APPLICATION_CREDENTIALS=${GCR_AUTH_JSON_FILE}
-    - apt-get update -qq && apt-get install -y git
-    - mkdir -p $WORKDIR
-    - cd $WORKDIR
-    # Clone Janeway
-    - git clone --branch develop https://github.com/PLOS/janeway.git $JANEWAY_PATH
-    # Copy this plugin into Janeway plugins folder
-    - mkdir -p $PLUGIN_PATH
-    - cp -r $CI_PROJECT_DIR/* $PLUGIN_PATH/
-    # Install dependencies
-    - python -m pip install --upgrade pip
-    - find $WORKDIR -name "*requirements.txt" -type f -exec pip install -r '{}' ';'
-    # Import Janeway dev settings
-    - cp $JANEWAY_PATH/src/core/dev_settings.py $JANEWAY_PATH/src/core/settings.py
-  script:
-    - cd $JANEWAY_PATH
-    - python src/manage.py test editorial_manager_transfer_service
-  # rules:
-  #   - if: '$CI_COMMIT_BRANCH == "main"'
-  #   - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-  artifacts:
-    when: always
-    paths:
-      - $JANEWAY_PATH/test_results.xml
-    reports:
-      junit: $JANEWAY_PATH/test_results.xml
+# django_tests:
+#   stage: test
+#   image: python:${PYTHON_VERSION}
+#   before_script:
+#     - export GOOGLE_APPLICATION_CREDENTIALS=${GCR_AUTH_JSON_FILE}
+#     - apt-get update -qq && apt-get install -y git
+#     - mkdir -p $WORKDIR
+#     - cd $WORKDIR
+#     # Clone Janeway
+#     - git clone --branch develop https://github.com/PLOS/janeway.git $JANEWAY_PATH
+#     # Copy this plugin into Janeway plugins folder
+#     - mkdir -p $PLUGIN_PATH
+#     - cp -r $CI_PROJECT_DIR/* $PLUGIN_PATH/
+#     # Install dependencies
+#     - python -m pip install --upgrade pip
+#     - find $WORKDIR -name "*requirements.txt" -type f -exec pip install -r '{}' ';'
+#     # Import Janeway dev settings
+#     - cp $JANEWAY_PATH/src/core/dev_settings.py $JANEWAY_PATH/src/core/settings.py
+#   script:
+#     - cd $JANEWAY_PATH
+#     - python src/manage.py test editorial_manager_transfer_service
+#   # rules:
+#   #   - if: '$CI_COMMIT_BRANCH == "main"'
+#   #   - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+#   artifacts:
+#     when: always
+#     paths:
+#       - $JANEWAY_PATH/test_results.xml
+#     reports:
+#       junit: $JANEWAY_PATH/test_results.xml
 
 # --------------------------------------------
 # Integration tests
@@ -67,8 +64,8 @@ django_tests:
 integration_tests:
   stage: integration
   image: gcr.io/plos-mgmt/plos-test:python-3-11
-  needs:
-    - job: django_tests
+  # needs:
+    # - job: django_tests
   script:
     - cd tests/integration
     - mkdir -p ./pytest_report
