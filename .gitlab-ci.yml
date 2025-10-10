@@ -1,13 +1,37 @@
 stages:
   - test
 
+variables:
+  PYTHON_VERSION: "3.10.15"
+  JANEWAY_PATH: "$CI_PROJECT_DIR/janeway"
+  PLUGIN_PATH: "$JANEWAY_PATH/src/plugins/editorial_manager_transfer_service"
+  DJANGO_SETTINGS_MODULE: "core.settings"
+  JANEWAY_SETTINGS_MODULE: "core.settings"
+  PYTHONPATH: "$JANEWAY_PATH/src"
 
-editorial_manager_transfer_service:test:
+cache:
+  key: "${CI_COMMIT_REF_SLUG}-pip"
+  paths:
+    - ~/.cache/pip/
+
+test:
   stage: test
+  image: python:${PYTHON_VERSION}
+  before_script:
+    - apt-get update -qq && apt-get install -y git
+    # Fetch Janeway repository
+    - git clone --branch develop https://github.com/PLOS/janeway.git $JANEWAY_PATH
+    # Fetch current project (plugin)
+    - mkdir -p $PLUGIN_PATH
+    - cp -r $CI_PROJECT_DIR/* $PLUGIN_PATH/
+    # Upgrade pip and install dependencies
+    - python -m pip install --upgrade pip
+    - find $CI_PROJECT_DIR -name "*requirements.txt" -type f -exec pip install -r '{}' ';'
+    # Import default Janeway settings
+    - cp $JANEWAY_PATH/src/core/dev_settings.py $JANEWAY_PATH/src/core/settings.py
   script:
-    - cd editorial_manager_transfer_service
-    - pipenv install --dev
-    - pipenv run pytest --cov-report html:coverage_report  --cov=. .
-  artifacts:
-    paths:
-      - editorial_manager_transfer_service/coverage_report
+    - cd $JANEWAY_PATH
+    - python src/manage.py test editorial_manager_transfer_service
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
