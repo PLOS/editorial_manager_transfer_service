@@ -12,6 +12,15 @@ variables:
   PYTHONPATH: "$JANEWAY_PATH/src"
   # Google Backend Credentials is required for the integration test image
   GOOGLE_BACKEND_CREDENTIALS: ${GCR_AUTH_JSON_FILE}
+  DOCKER_AUTH_CONFIG: >
+    {
+      "auths": {
+        "gcr.io": {
+          "username": "_json_key",
+          "password": "$GCR_AUTH_JSON"
+        }
+      }
+    }
 
 cache:
   key: "${CI_COMMIT_REF_SLUG}-pip"
@@ -57,11 +66,7 @@ django_tests:
 # --------------------------------------------
 integration_tests:
   stage: integration
-  image:
-    name: gcr.io/plos-mgmt/plos-test:python-3-11
-    auth:
-      username: _json_key
-      password: $GCR_AUTH_JSON_FILE
+  image: gcr.io/plos-mgmt/plos-test:python-3-11
   needs:
     - job: django_tests
   script:
