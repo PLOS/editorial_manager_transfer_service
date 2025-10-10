@@ -22,12 +22,12 @@ variables:
   DOCKER_HOST: tcp://localhost:2375
   DOCKER_TLS_CERTDIR: ""
 
-
-before_script:
-     - |
-       if [ -f "$GCR_AUTH_JSON_FILE" ]; then
-         cat "$GCR_AUTH_JSON_FILE" | docker login -u _json_key --password-stdin https://gcr.io
-       fi
+default:
+  before_script:
+      - |
+        if [ -f "$GCR_AUTH_JSON_FILE" ]; then
+          cat "$GCR_AUTH_JSON_FILE" | docker login -u _json_key --password-stdin https://gcr.io
+        fi
 
 # cache:
 #   key: "${CI_COMMIT_REF_SLUG}-pip"
