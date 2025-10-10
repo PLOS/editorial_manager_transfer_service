@@ -2,8 +2,7 @@ include:
   - project: plos/gcp-global
     file: /gitlab-ci-k8s+tf.yml
 
-job_name_from_included_file:
-  extends: .job_name_from_included_file
+workflow:
   rules:
     - when: always
 
@@ -38,6 +37,54 @@ default:
         fi
 
 # --------------------------------------------
+# Build stage placeholder
+# --------------------------------------------
+build_placeholder:
+  stage: build
+  script:
+    - echo "Build stage - add your build steps here"
+
+# --------------------------------------------
+# Prep cloud function stage placeholder
+# --------------------------------------------
+prep_cloud_function_placeholder:
+  stage: prep cloud function
+  script:
+    - echo "Prep cloud function stage - add your preparation steps here"
+
+# --------------------------------------------
+# Static analysis stage placeholder
+# --------------------------------------------
+static_analysis_placeholder:
+  stage: static analysis
+  script:
+    - echo "Static analysis stage - add your linting/analysis steps here"
+
+# --------------------------------------------
+# Test stage placeholder
+# --------------------------------------------
+test_placeholder:
+  stage: test
+  script:
+    - echo "Test stage - add your unit tests here"
+
+# --------------------------------------------
+# Plan stage placeholder
+# --------------------------------------------
+plan_placeholder:
+  stage: plan
+  script:
+    - echo "Plan stage - add your terraform/deployment planning here"
+
+# --------------------------------------------
+# Dev deploy stage placeholder
+# --------------------------------------------
+dev_deploy_placeholder:
+  stage: dev deploy
+  script:
+    - echo "Dev deploy stage - add your dev deployment steps here"
+
+# --------------------------------------------
 # Integration tests
 # --------------------------------------------
 integration_tests:
@@ -49,3 +96,13 @@ integration_tests:
     - pipenv install
     - pipenv run pytest -v -l --reruns 3 --reruns-delay 3 --timeout=600 \
         --html='./pytest_report/pytest_report.html' api/
+  rules:
+    - when: on_success
+
+# --------------------------------------------
+# Prod deploy stage placeholder
+# --------------------------------------------
+prod_deploy_placeholder:
+  stage: prod deploy
+  script:
+    - echo "Prod deploy stage - add your production deployment steps here"
