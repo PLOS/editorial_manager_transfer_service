@@ -10,6 +10,8 @@ variables:
   DJANGO_SETTINGS_MODULE: "core.settings"
   JANEWAY_SETTINGS_MODULE: "core.settings"
   PYTHONPATH: "$JANEWAY_PATH/src"
+  # Google Backend Credentials is required for the integration test image
+  GOOGLE_BACKEND_CREDENTIALS: ${GCR_AUTH_JSON_FILE}
 
 cache:
   key: "${CI_COMMIT_REF_SLUG}-pip"
