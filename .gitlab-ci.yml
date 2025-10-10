@@ -11,6 +11,8 @@ stages:
   - test
   - integration
   - dev deploy
+  - prod deploy
+
   
 variables:
   PYTHON_VERSION: "3.10.15"
