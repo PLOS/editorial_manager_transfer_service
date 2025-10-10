@@ -55,8 +55,10 @@ cache:
 # Integration tests
 # --------------------------------------------
 integration_tests:
-  image: gcr.io/plos-mgmt/plos-test:python-3-11
   stage: integration
+  image: gcr.io/plos-mgmt/plos-test:python-3-11
+  before_script:
+    - export GOOGLE_APPLICATION_CREDENTIALS=${GCR_AUTH_JSON_FILE}
   # needs:
     # - job: django_tests
   script:
