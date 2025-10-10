@@ -1,6 +1,4 @@
 include:
-  - project: 'dependabot-gitlab/dependabot-standalone'
-    file: '.gitlab-ci.yml'
   - project: plos/gcp-global
     file: /gitlab-ci-k8s+tf.yml
   - template: Security/SAST.gitlab-ci.yml
