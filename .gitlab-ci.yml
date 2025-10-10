@@ -1,6 +1,9 @@
 stages:
   - integration_test
 
+variables:
+  GOOGLE_BACKEND_CREDENTIALS: ${GCR_AUTH_JSON_FILE}
+
 before_script:
   - export GOOGLE_APPLICATION_CREDENTIALS=$GCR_AUTH_JSON_FILE
 
