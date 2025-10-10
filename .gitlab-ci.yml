@@ -6,14 +6,11 @@ include:
   - template: Security/SAST.gitlab-ci.yml
 
 stages:
-  - build
-  - prep cloud function
+  - plan
   - static analysis
   - test
-  - plan
+  - integration
   - dev deploy
-  - integrationABC
-  - prod deploy
   
 variables:
   PYTHON_VERSION: "3.10.15"
@@ -39,7 +36,7 @@ default:
 # Integration tests
 # --------------------------------------------
 integration_tests:
-  stage: integrationABC
+  stage: integration
   image: gcr.io/plos-mgmt/plos-test:python-3-11
   script:
     - cd tests/integration
