@@ -2,7 +2,7 @@ stages:
   - integration_test
 
 before_script:
-  - export GOOGLE_APPLICATION_CREDENTIALS=${GCR_AUTH_JSON_FILE}
+  - export GOOGLE_APPLICATION_CREDENTIALS=$GCR_AUTH_JSON_FILE
 
 
 # --------------------------------------------
