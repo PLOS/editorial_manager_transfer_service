@@ -8,6 +8,7 @@ __maintainer__ = "The Public Library of Science (PLOS)"
 import os
 from typing import List
 
+from plugins.editorial_manager_transfer_service import logger_messages
 from plugins.editorial_manager_transfer_service.file_exporter import ExportFileCreation
 from utils.logger import get_logger
 
@@ -53,6 +54,12 @@ class FileTransferService:
 
     @staticmethod
     def __get_dictionary_identifier(journal_code: str, article_id: str) -> str:
+        """
+        Gets the dictionary identifier for the given article.
+        :param journal_code: The journal code of the journal where the article lives.
+        :param article_id: The article id.
+        :return: The dictionary identifier.
+        """
         return f"{journal_code}-{article_id}"
 
     def get_export_zip_filepath(self, journal_code: str, article_id: str) -> str | None:
@@ -75,7 +82,38 @@ class FileTransferService:
         file_export_creator = self.get_export_file_creator(journal_code, article_id)
         return file_export_creator.get_go_filepath() if file_export_creator else None
 
+    def log_export_error(self, journal_code: str,
+                         article_id: str,
+                         error_message: str = None,
+                         error: Exception = None) -> None:
+        """
+        Logs an error message in both the database and plaintext logs.
+        :param error: The exception, if there is one.
+        :param error_message: The error message to print out.
+        :param journal_code: The journal code of the journal where the article lives.
+        :param article_id: The article id.
+        """
+        file_export_creator = self.get_export_file_creator(journal_code, article_id)
+        if file_export_creator:
+            file_export_creator.log_error(logger_messages.export_process_failed_ingest(article_id, error_message), error)
+
+    def log_export_success(self, journal_code: str,
+                           article_id: str) -> None:
+        """
+        Logs the success message for when an article has completed a journey to Editorial Manager.
+        :param journal_code: The journal code of the journal where the article lives.
+        :param article_id: The article id.
+        """
+        file_export_creator = self.get_export_file_creator(journal_code, article_id)
+        if file_export_creator:
+            file_export_creator.log_success()
+
     def delete_export_files(self, journal_code: str, article_id: str) -> None:
+        """
+        Deletes the export files for the given article.
+        :param journal_code: The journal code of the journal the article lives in.
+        :param article_id: The article id.
+        """
         dictionary_identifier: str = self.__get_dictionary_identifier(journal_code, article_id)
         if dictionary_identifier not in self.exports:
             return
@@ -93,11 +131,18 @@ class FileTransferService:
 
     @staticmethod
     def __delete_file(filepath: str) -> bool:
+        """
+        Deletes the given file.
+        :param filepath: The file path of the file to delete.
+        :return: True if the file was deleted, false otherwise.
+        """
         if not os.path.exists(filepath):
             return True
         try:
             os.remove(filepath)
-        except OSError:
+        except OSError as e:
+            logger.exception(e)
+            logger.error(logger_messages.excport_process_failed_delete_file(filepath))
             return False
 
         return True
@@ -129,13 +174,17 @@ def export_success_callback(journal_code: str, article_id: str) -> None:
     :param journal_code: The journal code of the journal the article lives in.
     :param article_id: The article id.
     """
+    FileTransferService().log_export_success(journal_code, article_id)
     FileTransferService().delete_export_files(journal_code, article_id)
 
 
-def export_failure_callback(journal_code: str, article_id: str) -> None:
+def export_failure_callback(journal_code: str, article_id: str, error_message: str = None, error: Exception = None) -> None:
     """
     The callback in case of a failed export.
+    :param error: The exception, if there is one.
+    :param error_message: The error message to print.
     :param journal_code: The journal code of the journal the article lives in.
     :param article_id: The article id.
     """
+    FileTransferService().log_export_error(journal_code, article_id, error_message, error)
     FileTransferService().delete_export_files(journal_code, article_id)
