@@ -14,10 +14,10 @@ variables:
   GOOGLE_BACKEND_CREDENTIALS: ${GCR_AUTH_JSON_FILE}
 
 before_script:
-  - |
-    if [ -n "$GCR_AUTH_JSON_FILE" ]; then
-      echo "$GCR_AUTH_JSON_FILE" | docker login -u _json_key --password-stdin https://gcr.io
-    fi
+     - |
+       if [ -f "$GCR_AUTH_JSON_FILE" ]; then
+         cat "$GCR_AUTH_JSON_FILE" | docker login -u _json_key --password-stdin https://gcr.io
+       fi
 
 # cache:
 #   key: "${CI_COMMIT_REF_SLUG}-pip"
