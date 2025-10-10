@@ -1,9 +1,3 @@
-include:
-  - project: plos/gcp-global
-    file: /gitlab-ci-k8s+tf.yml
-  - template: Security/SAST.gitlab-ci.yml
-
-
 stages:
   - test
   - integration
