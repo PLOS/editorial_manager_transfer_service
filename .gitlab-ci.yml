@@ -1,8 +1,17 @@
 include:
   - project: plos/gcp-global
     file: /gitlab-ci-k8s+tf.yml
-  - template: Security/SAST.gitlab-ci.yml
-  
+
+stages:
+  - build
+  - prep cloud function
+  - static analysis
+  - test
+  - plan
+  - dev deploy
+  - integration test
+  - prod deploy
+
 variables:
   PYTHON_VERSION: "3.10.15"
   WORKDIR: "/tmp/editorial_manager_transfer_service"
@@ -27,7 +36,7 @@ default:
 # Integration tests
 # --------------------------------------------
 integration_tests:
-  stage: integrationABC
+  stage: integration test
   image: gcr.io/plos-mgmt/plos-test:python-3-11
   script:
     - cd tests/integration
