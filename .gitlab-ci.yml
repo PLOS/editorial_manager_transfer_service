@@ -1,3 +1,10 @@
+include:
+  - project: 'dependabot-gitlab/dependabot-standalone'
+    file: '.gitlab-ci.yml'
+  - project: plos/gcp-global
+    file: /gitlab-ci-k8s+tf.yml
+  - template: Security/SAST.gitlab-ci.yml
+
 stages:
   # - test
   - integration
@@ -12,6 +19,9 @@ variables:
   PYTHONPATH: "$JANEWAY_PATH/src"
   # Google Backend Credentials is required for the integration test image
   GOOGLE_BACKEND_CREDENTIALS: ${GCR_AUTH_JSON_FILE}
+  DOCKER_HOST: tcp://localhost:2375
+  DOCKER_TLS_CERTDIR: ""
+
 
 before_script:
      - |
