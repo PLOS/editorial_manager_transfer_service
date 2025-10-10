@@ -61,7 +61,7 @@ integration_tests:
     name: gcr.io/plos-mgmt/plos-test:python-3-11
     auth:
       username: _json_key
-      password: $GCR_AUTH_JSON
+      password: $GCR_AUTH_JSON_FILE
   needs:
     - job: django_tests
   script:
