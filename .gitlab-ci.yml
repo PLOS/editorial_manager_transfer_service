@@ -12,7 +12,7 @@ stages:
   - test
   - plan
   - dev deploy
-  - integration test
+  - integration
   - prod deploy
   
 variables:
