@@ -6,11 +6,11 @@ include:
   - template: Security/SAST.gitlab-ci.yml
 
 stages:
+  - plan              
   - static analysis
-  - test
-  - integration
-  - test
-  - integration
+  - test              
+  - integration       
+
 
 variables:
   PYTHON_VERSION: "3.10.15"
