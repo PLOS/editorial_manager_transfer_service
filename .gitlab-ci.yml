@@ -4,13 +4,14 @@ stages:
 before_script:
   - export GOOGLE_APPLICATION_CREDENTIALS=$GCR_AUTH_JSON_FILE
 
-
 # --------------------------------------------
 # Integration tests
 # --------------------------------------------
 integration_tests:
   stage: integration_test
   image: gcr.io/plos-mgmt/plos-test:python-3-11
+  before_script:
+    - export GOOGLE_APPLICATION_CREDENTIALS=$GCR_AUTH_JSON_FILE
   script:
     - cd tests/integration
     - mkdir -p ./pytest_report
