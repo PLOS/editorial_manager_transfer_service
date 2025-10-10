@@ -3,7 +3,8 @@ stages:
 
 variables:
   PYTHON_VERSION: "3.10.15"
-  JANEWAY_PATH: "$CI_PROJECT_DIR/janeway"
+  WORKDIR: "/tmp/editorial_manager_transfer_service"
+  JANEWAY_PATH: "$WORKDIR/janeway"
   PLUGIN_PATH: "$JANEWAY_PATH/src/plugins/editorial_manager_transfer_service"
   DJANGO_SETTINGS_MODULE: "core.settings"
   JANEWAY_SETTINGS_MODULE: "core.settings"
@@ -19,19 +20,22 @@ test:
   image: python:${PYTHON_VERSION}
   before_script:
     - apt-get update -qq && apt-get install -y git
-    # Fetch Janeway repository
+    # Prepare working directory
+    - mkdir -p $WORKDIR
+    - cd $WORKDIR
+    # Clone Janeway outside CI_PROJECT_DIR to avoid recursion
     - git clone --branch develop https://github.com/PLOS/janeway.git $JANEWAY_PATH
-    # Fetch current project (plugin)
+    # Copy only the plugin source files
     - mkdir -p $PLUGIN_PATH
     - cp -r $CI_PROJECT_DIR/* $PLUGIN_PATH/
     # Upgrade pip and install dependencies
     - python -m pip install --upgrade pip
-    - find $CI_PROJECT_DIR -name "*requirements.txt" -type f -exec pip install -r '{}' ';'
+    - find $WORKDIR -name "*requirements.txt" -type f -exec pip install -r '{}' ';'
     # Import default Janeway settings
     - cp $JANEWAY_PATH/src/core/dev_settings.py $JANEWAY_PATH/src/core/settings.py
   script:
     - cd $JANEWAY_PATH
     - python src/manage.py test editorial_manager_transfer_service
   # rules:
-    # - if: '$CI_COMMIT_BRANCH == "main"'
+    # - if: '$CI_COMMIT_BRANCH == ""'
     # - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
