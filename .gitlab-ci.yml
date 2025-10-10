@@ -2,16 +2,6 @@ include:
   - project: plos/gcp-global
     file: /gitlab-ci-k8s+tf.yml
   - template: Security/SAST.gitlab-ci.yml
-
-stages:
-  - build
-  - prep cloud function
-  - static analysis
-  - test
-  - plan
-  - dev deploy
-  - integrationABC
-  - prod deploy
   
 variables:
   PYTHON_VERSION: "3.10.15"
