@@ -1,3 +1,7 @@
+image:
+  name: gcr.io/kaniko-project/executor:debug
+  entrypoint: [""]
+
 stages:
   - integration_test
 
