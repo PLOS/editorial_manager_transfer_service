@@ -57,7 +57,11 @@ django_tests:
 # --------------------------------------------
 integration_tests:
   stage: integration
-  image: gcr.io/plos-mgmt/plos-test:python-3-11
+  image:
+    name: gcr.io/plos-mgmt/plos-test:python-3-11
+    auth:
+      username: _json_key
+      password: $GCR_AUTH_JSON
   needs:
     - job: django_tests
   script:
