@@ -12,7 +12,7 @@ stages:
   - test
   - plan
   - dev deploy
-  - integration
+  - integrationABC
   - prod deploy
   
 variables:
@@ -39,7 +39,7 @@ default:
 # Integration tests
 # --------------------------------------------
 integration_tests:
-  stage: integration
+  stage: integrationABC
   image: gcr.io/plos-mgmt/plos-test:python-3-11
   script:
     - cd tests/integration
