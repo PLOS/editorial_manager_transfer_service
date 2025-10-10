@@ -17,6 +17,9 @@ before_script:
 integration_tests:
   stage: integration_test
   image: gcr.io/plos-mgmt/plos-test:python-3-11
+  tags:
+    - dev
+    - gke
   before_script:
     - export GOOGLE_APPLICATION_CREDENTIALS=$GCR_AUTH_JSON_FILE
     - echo $GCR_AUTH_JSON_FILE
