@@ -1,0 +1,13 @@
+stages:
+  - test
+
+
+editorial_manager_transfer_service:test:
+  stage: test
+  script:
+    - cd editorial_manager_transfer_service
+    - pipenv install --dev
+    - pipenv run pytest --cov-report html:coverage_report  --cov=. .
+  artifacts:
+    paths:
+      - editorial_manager_transfer_service/coverage_report
