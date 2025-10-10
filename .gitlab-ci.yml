@@ -3,6 +3,7 @@ include:
     file: /gitlab-ci-k8s+tf.yml
 
 job_name_from_included_file:
+  extends: .job_name_from_included_file
   rules:
     - when: always
 
