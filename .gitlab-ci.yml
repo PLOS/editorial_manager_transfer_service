@@ -32,6 +32,6 @@ test:
   script:
     - cd $JANEWAY_PATH
     - python src/manage.py test editorial_manager_transfer_service
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  # rules:
+    # - if: '$CI_COMMIT_BRANCH == "main"'
+    # - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
