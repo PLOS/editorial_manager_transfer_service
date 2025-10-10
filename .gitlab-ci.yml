@@ -6,12 +6,12 @@ include:
   - template: Security/SAST.gitlab-ci.yml
 
 stages:
-  - plan              
+  - plan
   - static analysis
-  - test              
-  - integration       
-
-
+  - test
+  - integration
+  - dev deploy
+  
 variables:
   PYTHON_VERSION: "3.10.15"
   WORKDIR: "/tmp/editorial_manager_transfer_service"
