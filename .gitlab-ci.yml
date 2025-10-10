@@ -2,6 +2,10 @@ include:
   - project: plos/gcp-global
     file: /gitlab-ci-k8s+tf.yml
 
+job_name_from_included_file:
+  rules:
+    - when: always
+
 stages:
   - build
   - prep cloud function
