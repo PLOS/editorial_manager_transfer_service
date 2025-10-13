@@ -75,7 +75,7 @@ selenium_tests:
     - cp $JANEWAY_PATH/src/core/dev_settings.py $JANEWAY_PATH/src/core/settings.py
   script:
     - cd $JANEWAY_PATH
-    - python src/manage.py test editorial_manager_transfer_service.tests.test_basic_selenium.BasicSeleniumTest
+    - python src/manage.py test editorial_manager_transfer_service.tests.test_selenium.BasicSeleniumTest
   artifacts:
     when: always
     paths:
