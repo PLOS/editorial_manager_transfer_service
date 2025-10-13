@@ -1,19 +1,26 @@
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
-from selenium import webdriver
-from selenium.webdriver.common.by import By
+from plos_test import WebDriverManager  # Or whatever plos_test provides
+from plos_test.pages.BillingPage import BillingPage
 
-class MySeleniumTests(StaticLiveServerTestCase):
+
+class BillingPageTests(StaticLiveServerTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.selenium = webdriver.Chrome()  # or Firefox, etc.
-        cls.selenium.implicitly_wait(10)
+        # Use plos_test's driver management
+        cls.driver_manager = WebDriverManager()  # Check plos_test docs for actual class
+        cls.driver = cls.driver_manager.get_driver()
 
     @classmethod
     def tearDownClass(cls):
-        cls.selenium.quit()
+        cls.driver_manager.cleanup()  # Or whatever cleanup method plos_test provides
         super().tearDownClass()
 
-    def test_login_page(self):
-        self.selenium.get(f'{self.live_server_url}/login/')
-        self.assertTrue(True)
+    def test_billing_page_elements(self):
+        # Navigate using Django's live server URL
+        self.driver.get(f'{self.live_server_url}/billing/')
+        
+        # Your BillingPage should work as-is
+        billing_page = BillingPage(self.driver)
+        billing_page.element_is_present("Title")
+        billing_page.element_has_test("Fee", "$2950")
