@@ -3,7 +3,7 @@ image:
   entrypoint: [""]
 
 stages:
-  - django_test
+  # - django_test
   - integration_test
 
 variables:
@@ -20,11 +20,44 @@ before_script:
   - export GOOGLE_APPLICATION_CREDENTIALS=$GCR_AUTH_JSON_FILE
 
 # --------------------------------------------
-# Django unit tests
+# Django Unit Tests
 # --------------------------------------------
-django_tests:
-  stage: django_test
+# django_tests:
+#   stage: django_test
+#   image: python:${PYTHON_VERSION}
+#   before_script:
+#     - apt-get update -qq && apt-get install -y git
+#     - mkdir -p $WORKDIR
+#     - cd $WORKDIR
+#     # Clone Janeway
+#     - git clone --branch develop https://github.com/PLOS/janeway.git $JANEWAY_PATH
+#     # Copy plugin into Janeway
+#     - mkdir -p $PLUGIN_PATH
+#     - cp -r $CI_PROJECT_DIR/* $PLUGIN_PATH/
+#     # Install dependencies
+#     - python -m pip install --upgrade pip
+#     - find $WORKDIR -name "*requirements.txt" -type f -exec pip install -r '{}' ';'
+#     # Copy dev settings
+#     - cp $JANEWAY_PATH/src/core/dev_settings.py $JANEWAY_PATH/src/core/settings.py
+#   script:
+#     - cd $JANEWAY_PATH
+#     - python src/manage.py test editorial_manager_transfer_service
+#   artifacts:
+#     when: always
+#     paths:
+#       - $JANEWAY_PATH/test_results.xml
+#     reports:
+#       junit: $JANEWAY_PATH/test_results.xml
+
+# --------------------------------------------
+# Selenium Integration Test
+# --------------------------------------------
+selenium_tests:
+  stage: integration_test
   image: python:${PYTHON_VERSION}
+  services:
+    - name: selenium/standalone-chrome:latest
+      alias: selenium
   before_script:
     - apt-get update -qq && apt-get install -y git
     - mkdir -p $WORKDIR
@@ -37,14 +70,12 @@ django_tests:
     # Install dependencies
     - python -m pip install --upgrade pip
     - find $WORKDIR -name "*requirements.txt" -type f -exec pip install -r '{}' ';'
+    - pip install selenium chromedriver-autoinstaller
     # Import Janeway dev settings
     - cp $JANEWAY_PATH/src/core/dev_settings.py $JANEWAY_PATH/src/core/settings.py
   script:
     - cd $JANEWAY_PATH
-    - python src/manage.py test editorial_manager_transfer_service
-  # rules:
-  #   - if: '$CI_COMMIT_BRANCH == "main"'
-  #   - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - python src/manage.py test editorial_manager_transfer_service.tests.test_basic_selenium.BasicSeleniumTest
   artifacts:
     when: always
     paths:
