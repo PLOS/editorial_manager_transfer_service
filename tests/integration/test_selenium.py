@@ -1,21 +1,21 @@
-import unittest
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-import chromedriver_autoinstaller
+from selenium.webdriver.common.by import By
 
-class BasicSeleniumTest(unittest.TestCase):
-    def setUp(self):
-        chromedriver_autoinstaller.install()
-        chrome_options = Options()
-        chrome_options.add_argument("--headless")
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument("--disable-dev-shm-usage")
-        self.driver = webdriver.Chrome(options=chrome_options)
+driver = webdriver.Chrome()
 
-    def test_homepage_title(self):
-        self.driver.get("http://localhost:8000")  # Adjust URL if needed
-        self.assertIn("Janeway", self.driver.title)
+driver.get("https://www.selenium.dev/selenium/web/web-form.html")
 
-    def tearDown(self):
-        self.driver.quit()
+title = driver.title
+
+driver.implicitly_wait(0.5)
+
+text_box = driver.find_element(by=By.NAME, value="my-text")
+submit_button = driver.find_element(by=By.CSS_SELECTOR, value="button")
+
+text_box.send_keys("Selenium")
+submit_button.click()
+
+message = driver.find_element(by=By.ID, value="message")
+text = message.text
+
+driver.quit()
