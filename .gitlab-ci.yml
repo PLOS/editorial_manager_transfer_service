@@ -6,9 +6,9 @@ stages:
   # - django_test
   - integration_test
 
-include:
-  - project: plos/gcp-global
-    file: /gitlab-ci-tf.yml
+# include:
+#   - project: plos/gcp-global
+#     file: /gitlab-ci-tf.yml
 
 variables:
   WORKDIR: "/tmp/editorial_manager_transfer_service"
@@ -78,10 +78,12 @@ integration_tests:
   tags:
     - dev
     - gke
-  extends:
-    - .dev
+  # extends:
+  #   - .dev
   variables:
     WEBDRIVER_HEADLESS: "True"
+  before_script:
+    - export GOOGLE_APPLICATION_CREDENTIALS=$GCR_AUTH_JSON_FILE
   script:
     - python --version
     - firefox -v
