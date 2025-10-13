@@ -7,7 +7,6 @@ stages:
   - integration_test
 
 variables:
-  PYTHON_VERSION: "3.10.15" # is this the correct python version? 
   WORKDIR: "/tmp/editorial_manager_transfer_service"
   JANEWAY_PATH: "$WORKDIR/janeway"
   PLUGIN_PATH: "$JANEWAY_PATH/src/plugins/editorial_manager_transfer_service"
@@ -83,15 +82,7 @@ integration_tests:
   script:
     - cd tests/integration
     - mkdir -p ./pytest_report
-    # Install both production and dev dependencies
     - pipenv install --dev
-    # Confirm pytest is available
-    - pipenv run pytest --version
-    # Run tests with retry, timeout, and HTML report
-    - pipenv run pytest -v -l --reruns 3 --reruns-delay 3 --timeout=600 \
-        --html='./pytest_report/pytest_report.html' api/
-  artifacts:
-    paths:
-      - Pipfile.lock
+    - pipenv run pytest -v -l --reruns 3 --reruns-delay 3 --timeout=600 --html=./pytest_report/pytest_report.html api/
   # needs:
     # - job: django_tests
