@@ -88,11 +88,11 @@ integration_tests:
     - python --version
     - firefox -v
     - geckodriver -V
-    - cd test/integration
+    - cd test
     - mkdir ./pytest_report
     - pipenv install
-    - pipenv run pytest -v -n auto -l --reruns 3 --reruns-delay 3 --timeout=600 --html='./pytest_report/pytest_report.html' desktop/
+    - pipenv run pytest -v -n auto -l --reruns 1 --reruns-delay 3 --timeout=600 --html='./pytest_report/pytest_report.html' 
   artifacts:
     when: always
     paths:
-      - test/integration/pytest_report/
+      - test/pytest_report/
