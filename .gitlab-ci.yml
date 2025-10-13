@@ -23,7 +23,10 @@ before_script:
 # --------------------------------------------
 django_tests:
   stage: django_test
-  image: python:${PYTHON_VERSION}
+  image: gcr.io/plos-mgmt/plos-test:python-3-11
+  tags:
+    - dev
+    - gke
   before_script:
     - apt-get update -qq && apt-get install -y git
     - mkdir -p $WORKDIR
