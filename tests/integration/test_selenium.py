@@ -7,3 +7,4 @@ class MySeleniumTests(StaticLiveServerTestCase):
 
     def test_login_page(self):
         self.assertTrue(True)
+ 
