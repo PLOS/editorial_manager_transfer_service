@@ -77,11 +77,11 @@ integration_tests:
     - gke
   before_script:
     - export GOOGLE_APPLICATION_CREDENTIALS=$GCR_AUTH_JSON_FILE
-    - pip install pipenv
+    - pip install --upgrade pip pytest pytest-rerunfailures pytest-timeout pytest-html
   script:
     - cd tests/integration
     - mkdir -p ./pytest_report
-    - pipenv run pytest -v -l --reruns 3 --reruns-delay 3 --timeout=600 \
+    - pytest -v -l --reruns 3 --reruns-delay 3 --timeout=600 \
         --html='./pytest_report/pytest_report.html' api/
   # needs:
     # - job: django_tests
