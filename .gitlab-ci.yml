@@ -7,7 +7,7 @@ stages:
   - integration_test
 
 variables:
-  PYTHON_VERSION: "3.12" # is this the correct python version? 
+  PYTHON_VERSION: "3.10.15" # is this the correct python version? 
   WORKDIR: "/tmp/editorial_manager_transfer_service"
   JANEWAY_PATH: "$WORKDIR/janeway"
   PLUGIN_PATH: "$JANEWAY_PATH/src/plugins/editorial_manager_transfer_service"
@@ -71,7 +71,7 @@ before_script:
 # --------------------------------------------
 integration_tests:
   stage: integration_test
-  image: gcr.io/plos-mgmt/plos-test:python-3-12
+  image: gcr.io/plos-mgmt/plos-test:python-3-11
   tags:
     - dev
     - gke
