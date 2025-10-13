@@ -3,13 +3,55 @@ image:
   entrypoint: [""]
 
 stages:
+  - django_test
   - integration_test
 
 variables:
+  PYTHON_VERSION: "3.10.15" # is this the correct python version? 
+  WORKDIR: "/tmp/editorial_manager_transfer_service"
+  JANEWAY_PATH: "$WORKDIR/janeway"
+  PLUGIN_PATH: "$JANEWAY_PATH/src/plugins/editorial_manager_transfer_service"
+  DJANGO_SETTINGS_MODULE: "core.settings" # is this required? looks unused
+  JANEWAY_SETTINGS_MODULE: "core.settings" # is this required? looks unused
+  PYTHONPATH: "$JANEWAY_PATH/src" # is this required? looks unused
   GOOGLE_BACKEND_CREDENTIALS: ${GCR_AUTH_JSON_FILE}
 
 before_script:
   - export GOOGLE_APPLICATION_CREDENTIALS=$GCR_AUTH_JSON_FILE
+
+# --------------------------------------------
+# Django unit tests
+# --------------------------------------------
+django_tests:
+  stage: django_test
+  image: python:${PYTHON_VERSION}
+  before_script:
+    - apt-get update -qq && apt-get install -y git
+    - mkdir -p $WORKDIR
+    - cd $WORKDIR
+    # Clone Janeway
+    - git clone --branch develop https://github.com/PLOS/janeway.git $JANEWAY_PATH
+    # Copy this plugin into Janeway plugins folder
+    - mkdir -p $PLUGIN_PATH
+    - cp -r $CI_PROJECT_DIR/* $PLUGIN_PATH/
+    # Install dependencies
+    - python -m pip install --upgrade pip
+    - find $WORKDIR -name "*requirements.txt" -type f -exec pip install -r '{}' ';'
+    # Import Janeway dev settings
+    - cp $JANEWAY_PATH/src/core/dev_settings.py $JANEWAY_PATH/src/core/settings.py
+  script:
+    - cd $JANEWAY_PATH
+    - python src/manage.py test editorial_manager_transfer_service
+  # rules:
+  #   - if: '$CI_COMMIT_BRANCH == "main"'
+  #   - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  artifacts:
+    when: always
+    paths:
+      - $JANEWAY_PATH/test_results.xml
+    reports:
+      junit: $JANEWAY_PATH/test_results.xml
+
 
 # --------------------------------------------
 # Integration tests
@@ -23,6 +65,8 @@ integration_tests:
   before_script:
     - export GOOGLE_APPLICATION_CREDENTIALS=$GCR_AUTH_JSON_FILE
     - echo $GCR_AUTH_JSON_FILE
+  needs:
+    - job: django_tests
   script:
     - cd tests/integration
     - mkdir -p ./pytest_report
