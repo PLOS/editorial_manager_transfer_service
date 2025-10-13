@@ -17,73 +17,63 @@ variables:
 
 before_script:
   - export GOOGLE_APPLICATION_CREDENTIALS=$GCR_AUTH_JSON_FILE
-  - apt-get update -qq && apt-get install -y git
-  - mkdir -p $WORKDIR
-  - cd $WORKDIR
-  # Clone Janeway
-  - git clone --branch develop https://github.com/PLOS/janeway.git $JANEWAY_PATH
-  # Copy this plugin into Janeway plugins folder
-  - mkdir -p $PLUGIN_PATH
-  - cp -r $CI_PROJECT_DIR/* $PLUGIN_PATH/
-  # Install dependencies
-  - python -m pip install --upgrade pip
-  - find $WORKDIR -name "*requirements.txt" -type f -exec pip install -r '{}' ';'
-  # Import Janeway dev settings
-  - cp $JANEWAY_PATH/src/core/dev_settings.py $JANEWAY_PATH/src/core/settings.py
 
 # --------------------------------------------
 # Django unit tests
 # --------------------------------------------
-# django_tests:
-#   stage: django_test
-#   image: python:${PYTHON_VERSION}
-#   before_script:
-#     - apt-get update -qq && apt-get install -y git
-#     - mkdir -p $WORKDIR
-#     - cd $WORKDIR
-#     # Clone Janeway
-#     - git clone --branch develop https://github.com/PLOS/janeway.git $JANEWAY_PATH
-#     # Copy this plugin into Janeway plugins folder
-#     - mkdir -p $PLUGIN_PATH
-#     - cp -r $CI_PROJECT_DIR/* $PLUGIN_PATH/
-#     # Install dependencies
-#     - python -m pip install --upgrade pip
-#     - find $WORKDIR -name "*requirements.txt" -type f -exec pip install -r '{}' ';'
-#     # Import Janeway dev settings
-#     - cp $JANEWAY_PATH/src/core/dev_settings.py $JANEWAY_PATH/src/core/settings.py
-#   script:
-#     - cd $JANEWAY_PATH
-#     - python src/manage.py test editorial_manager_transfer_service
-#   # rules:
-#   #   - if: '$CI_COMMIT_BRANCH == "main"'
-#   #   - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-#   artifacts:
-#     when: always
-#     paths:
-#       - $JANEWAY_PATH/test_results.xml
-#     reports:
-#       junit: $JANEWAY_PATH/test_results.xml
-
-
-# --------------------------------------------
-# Integration tests
-# --------------------------------------------
-integration_tests:
-  stage: integration_test
-  image: gcr.io/plos-mgmt/plos-test:python-3-11
-  tags:
-    - dev
-    - gke
+django_tests:
+  stage: django_test
+  image: python:${PYTHON_VERSION}
   before_script:
-    - export GOOGLE_APPLICATION_CREDENTIALS=$GCR_AUTH_JSON_FILE
-    - export WEBDRIVER_TARGET_URL='www.google.com'
-    - pip install --upgrade pip pipenv
+    - apt-get update -qq && apt-get install -y git
+    - mkdir -p $WORKDIR
+    - cd $WORKDIR
+    # Clone Janeway
+    - git clone --branch develop https://github.com/PLOS/janeway.git $JANEWAY_PATH
+    # Copy this plugin into Janeway plugins folder
+    - mkdir -p $PLUGIN_PATH
+    - cp -r $CI_PROJECT_DIR/* $PLUGIN_PATH/
+    # Install dependencies
+    - python -m pip install --upgrade pip pipenv
     - pipenv --version
     - pipenv lock
     - pipenv install --dev
+    - find $WORKDIR -name "*requirements.txt" -type f -exec pip install -r '{}' ';'
+    # Import Janeway dev settings
+    - cp $JANEWAY_PATH/src/core/dev_settings.py $JANEWAY_PATH/src/core/settings.py
   script:
-    # - pipenv run pytest -v -l --reruns 3 --reruns-delay 3 --timeout=600 --html=./pytest_report/pytest_report.html
     - cd $JANEWAY_PATH
     - python src/manage.py test editorial_manager_transfer_service
-  # needs:
-    # - job: django_tests
+  # rules:
+  #   - if: '$CI_COMMIT_BRANCH == "main"'
+  #   - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  artifacts:
+    when: always
+    paths:
+      - $JANEWAY_PATH/test_results.xml
+    reports:
+      junit: $JANEWAY_PATH/test_results.xml
+
+
+# # --------------------------------------------
+# # Integration tests
+# # --------------------------------------------
+# integration_tests:
+#   stage: integration_test
+#   image: gcr.io/plos-mgmt/plos-test:python-3-11
+#   tags:
+#     - dev
+#     - gke
+#   needs:
+#     - job: django_tests
+#   before_script:
+#     - export GOOGLE_APPLICATION_CREDENTIALS=$GCR_AUTH_JSON_FILE
+#     - export WEBDRIVER_TARGET_URL='www.google.com'
+#     - pip install --upgrade pip pipenv
+#     - pipenv --version
+#     - pipenv lock
+#     - pipenv install --dev
+#   script:
+#     # - pipenv run pytest -v -l --reruns 3 --reruns-delay 3 --timeout=600 --html=./pytest_report/pytest_report.html
+#     - cd $JANEWAY_PATH
+#     - python src/manage.py test editorial_manager_transfer_service
