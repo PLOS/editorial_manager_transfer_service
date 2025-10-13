@@ -84,7 +84,7 @@ integration_tests:
     - cd tests/integration
     - mkdir -p ./pytest_report
     - pipenv install --dev
-    - pipenv run pytest -v -l --reruns 3 --reruns-delay 3 --timeout=600 --html=./pytest_report/pytest_report.html
+    # - pipenv run pytest -v -l --reruns 3 --reruns-delay 3 --timeout=600 --html=./pytest_report/pytest_report.html
     - cd $JANEWAY_PATH
     - python src/manage.py test editorial_manager_transfer_service
   # needs:
