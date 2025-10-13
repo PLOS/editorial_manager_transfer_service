@@ -18,19 +18,19 @@ variables:
 
 before_script:
   - export GOOGLE_APPLICATION_CREDENTIALS=$GCR_AUTH_JSON_FILE
-    - apt-get update -qq && apt-get install -y git
-    - mkdir -p $WORKDIR
-    - cd $WORKDIR
-    # Clone Janeway
-    - git clone --branch develop https://github.com/PLOS/janeway.git $JANEWAY_PATH
-    # Copy this plugin into Janeway plugins folder
-    - mkdir -p $PLUGIN_PATH
-    - cp -r $CI_PROJECT_DIR/* $PLUGIN_PATH/
-    # Install dependencies
-    - python -m pip install --upgrade pip
-    - find $WORKDIR -name "*requirements.txt" -type f -exec pip install -r '{}' ';'
-    # Import Janeway dev settings
-    - cp $JANEWAY_PATH/src/core/dev_settings.py $JANEWAY_PATH/src/core/settings.py
+  - apt-get update -qq && apt-get install -y git
+  - mkdir -p $WORKDIR
+  - cd $WORKDIR
+  # Clone Janeway
+  - git clone --branch develop https://github.com/PLOS/janeway.git $JANEWAY_PATH
+  # Copy this plugin into Janeway plugins folder
+  - mkdir -p $PLUGIN_PATH
+  - cp -r $CI_PROJECT_DIR/* $PLUGIN_PATH/
+  # Install dependencies
+  - python -m pip install --upgrade pip
+  - find $WORKDIR -name "*requirements.txt" -type f -exec pip install -r '{}' ';'
+  # Import Janeway dev settings
+  - cp $JANEWAY_PATH/src/core/dev_settings.py $JANEWAY_PATH/src/core/settings.py
 
 # --------------------------------------------
 # Django unit tests
