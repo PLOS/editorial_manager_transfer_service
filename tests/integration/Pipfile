@@ -1,0 +1,21 @@
+[[source]]
+url = "https://pypi-dev.plos.org/developer/dev/+simple/"
+verify_ssl = true
+name = "devpi"
+
+[packages]
+plos-test = "==1.3.2"
+pytest-html = "*"
+pytest-repeat = "*"
+pytest-rerunfailures = "*"
+pytest-timeout = "*"
+pytest-xdist = "*"
+jsonpath = "*"
+jsonschema = "*"
+google-cloud-firestore = "*"
+python-dotenv = "*"
+
+[requires]
+python_version = "3.12"
+
+[dev-packages]
