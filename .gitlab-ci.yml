@@ -71,7 +71,7 @@ before_script:
 # --------------------------------------------
 integration_tests:
   stage: integration_test
-  image: gcr.io/plos-mgmt/plos-test:python-3-11
+  image: gcr.io/plos-mgmt/plos-test:python-3-12
   tags:
     - dev
     - gke
