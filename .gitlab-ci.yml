@@ -4,9 +4,10 @@ image:
 
 stages:
   - django_test
-  # - integration_test
+  - integration_test
 
 variables:
+  PYTHON_VERSION: "3.10.15" # is this the correct python version? 
   WORKDIR: "/tmp/editorial_manager_transfer_service"
   JANEWAY_PATH: "$WORKDIR/janeway"
   PLUGIN_PATH: "$JANEWAY_PATH/src/plugins/editorial_manager_transfer_service"
@@ -23,10 +24,7 @@ before_script:
 # --------------------------------------------
 django_tests:
   stage: django_test
-  image: gcr.io/plos-mgmt/plos-test:python-3-11
-  tags:
-    - dev
-    - gke
+  image: python:${PYTHON_VERSION}
   before_script:
     - apt-get update -qq && apt-get install -y git
     - mkdir -p $WORKDIR
@@ -37,10 +35,7 @@ django_tests:
     - mkdir -p $PLUGIN_PATH
     - cp -r $CI_PROJECT_DIR/* $PLUGIN_PATH/
     # Install dependencies
-    - python -m pip install --upgrade pip pipenv
-    - pipenv --version
-    - pipenv lock
-    - pipenv install --dev
+    - python -m pip install --upgrade pip
     - find $WORKDIR -name "*requirements.txt" -type f -exec pip install -r '{}' ';'
     # Import Janeway dev settings
     - cp $JANEWAY_PATH/src/core/dev_settings.py $JANEWAY_PATH/src/core/settings.py
@@ -67,16 +62,14 @@ django_tests:
 #   tags:
 #     - dev
 #     - gke
-#   needs:
-#     - job: django_tests
 #   before_script:
 #     - export GOOGLE_APPLICATION_CREDENTIALS=$GCR_AUTH_JSON_FILE
-#     - export WEBDRIVER_TARGET_URL='www.google.com'
-#     - pip install --upgrade pip pipenv
-#     - pipenv --version
-#     - pipenv lock
-#     - pipenv install --dev
+#     - echo $GCR_AUTH_JSON_FILE
+#   needs:
+#     - job: django_tests
 #   script:
-#     # - pipenv run pytest -v -l --reruns 3 --reruns-delay 3 --timeout=600 --html=./pytest_report/pytest_report.html
-#     - cd $JANEWAY_PATH
-#     - python src/manage.py test editorial_manager_transfer_service
+#     - cd tests/integration
+#     - mkdir -p ./pytest_report
+#     - pipenv install
+#     - pipenv run pytest -v -l --reruns 3 --reruns-delay 3 --timeout=600 \
+#         --html='./pytest_report/pytest_report.html' api/
