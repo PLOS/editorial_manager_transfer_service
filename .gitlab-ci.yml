@@ -85,7 +85,6 @@ integration_tests:
     - mkdir -p ./pytest_report
     # Install both production and dev dependencies
     - pipenv install --dev
-    - 
     # Confirm pytest is available
     - pipenv run pytest --version
     # Run tests with retry, timeout, and HTML report

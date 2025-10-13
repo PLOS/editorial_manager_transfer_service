@@ -8,7 +8,6 @@ from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 
 from . import Config as Config
-from .resources import documents
 from plos_test.BasePage import BasePage
 
 class BillingPage(BasePage):
