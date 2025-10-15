@@ -1,4 +1,7 @@
 /.venv/
 /editorial_manager_transfer_service.iml
-/.idea/
+.idea/
 /.hypothesis/
+
+tests/geckodriver.log
+tests/pytest_report/
