@@ -45,7 +45,6 @@ class EmAuthorPage(EmPage):
         self._first_row_select = (By.CSS_SELECTOR, "#tblFileInventory > tbody select")
         self._cover_letter_option = "*Cover Letter"
         self._uploading_progress = (By.ID, "lblOverallProgressNumberOfFiles")
-        self._wait = 1
 
         # General Information screen
         self._section_select = (By.ID, "ddlSection")

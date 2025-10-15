@@ -32,7 +32,6 @@ class BillingPage(BasePage):
         self._unable_to_pay_link = (By.LINK_TEXT, "I am unable to pay")
         self._fee = (By.ID, "price")
         self._deal_details = (By.ID, "deal-details")
-        self._wait = 1
 
     def select_element_locator(self, element_name):
         if element_name == "Title":
