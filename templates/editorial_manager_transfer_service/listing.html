@@ -1,0 +1,72 @@
+{% extends "admin/core/base.html" %}
+
+{% block title %}Editorial Manager Transfer Service - Failed Transfers{% endblock %}
+{% block title-section %}Editorial Manager Transfer Service - Failed Transfers{% endblock %}
+
+{% block breadcrumbs %}
+    {{ block.super }}
+    <li><a href="{% url 'editorial_manager_transfer_service_manager' %}">Editorial Manager Transfer Service</a></li>
+    <li>Transfer Logs</li>
+{% endblock %}
+
+{% block body %}
+    <div class="large-12 columns">
+        <div class="box">
+            <div class="title-area">
+                <h2>Articles Failed Bundling Stage</h2>
+            </div>
+            <div class="content">
+                <table class="small article_list" id="failed_bundle_transfer_reports">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Title</th>
+                        <th>Date Started</th>
+                        {% if request.user.is_staff %}
+                            <th></th>
+                            <th></th>
+                        {% endif %}
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    {% for report in failed_bundle_transfer_reports %}
+                        <tr>
+                            <td>{{ report.article.pk }}</td>
+                            <td>
+                                <a href="{% external_journal_url journal 'manage_archive_article' report.article.pk %}">
+                                    {{ report.article.title|safe }}
+                                </a>
+                            </td>
+                            <td>
+                                {{ report.message_date_time_start }}
+                            </td>
+                            {% if request.user.is_staff %}
+                                <td>
+                                    <a href="{% url 'editorial_manager_transfer_service_manager_report_logs' report.pk %}"
+                                       class="small button info">
+                                        <i class="fa fa-paperclip" aria-hidden="true">&nbsp;</i> View Logs
+                                    </a>
+                                </td>
+                                <td>
+                                    <form method="POST">{% csrf_token %}
+                                        <button name="send_article" value="{{ report.article.pk }}"
+                                                class="small success button">
+                                            <i class="fa fa-paper-plane" aria-hidden="true">&nbsp;</i> Send to Editorial
+                                            Manager
+                                        </button>
+                                    </form>
+                                </td>
+                            {% endif %}
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5">No reports to show.</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}
