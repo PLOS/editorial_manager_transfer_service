@@ -1,18 +1,27 @@
-__author__ = "Joshua Lavarine"
-__license__ = "AGPL v3"
-__maintainer__ = "The Public Library of Science (PLOS)"
-
 import logging
 
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 
 from . import Config as Config
+from .resources import documents
 from plos_test.BasePage import BasePage
+
+__author__ = 'vkulgavyi@plos.org'
 
 class BillingPage(BasePage):
     def __init__(self, driver, document='', urlSuffix=''):
         super(BillingPage, self).__init__(driver)
+
+        # base_url = Config.base_url + urlSuffix + '?cloudGuid={0}'.format(document_guid)
+        # try:
+        #     self._driver.get(base_url)
+        #     self._driver.navigated = True
+        # except TimeoutException as toe:
+        #     print(
+        #         '\t[WebDriver Error] WebDriver timed out while trying to load the requested '
+        #         'web page "%s".' % base_url)
+        #     raise toe
 
         # Locators - Instance variables unique to each instance
         self._title= (By.XPATH, "//h1[text()='PLOS Publication Fee']")
