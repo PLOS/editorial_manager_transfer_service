@@ -30,6 +30,7 @@ class EmPage(BasePage):
                     '\t[WebDriver Error] WebDriver timed out while trying to load the requested '
                     'web page "%s".' % base_url)
                 raise toe
+        self._wait = 1
 
         self.journal = journal
         self.scenario = scenario

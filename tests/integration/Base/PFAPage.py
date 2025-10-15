@@ -11,6 +11,7 @@ class PFAPage(BillingPage):
     def __init__(self, driver, urlSuffix=''):
         super(PFAPage, self).__init__(driver)
 
+        self._wait = 1
         self._step_icon_locator_format = "//*[contains(@class,'mantine-Stepper-stepIcon') and @data-progress='true' and text()='{0}']"
         self._step_label_locator_format = "//*[contains(@class,'mantine-Stepper-stepLabel') and text()='{0}']"
         self._step_radio_button_label_locator_format = "//label[contains(@class,'mantine-Radio-label') and text()='{0}']"
