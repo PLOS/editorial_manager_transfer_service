@@ -82,6 +82,7 @@ integration_tests:
   #   - .dev
   variables:
     WEBDRIVER_HEADLESS: "True"
+    WEBDRIVER_WAIT_TIMEOUT: "60"
   before_script:
     - export GOOGLE_APPLICATION_CREDENTIALS=$GCR_AUTH_JSON_FILE
   script:
