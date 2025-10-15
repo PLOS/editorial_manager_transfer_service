@@ -3,19 +3,19 @@ from pytest_bdd import scenario, given, when, then, parsers
 
 from ..Base.EmAuthorPage import EmAuthorPage
 
-@scenario("Features/EM_Workflows.feature", "New Manuscript creation for PCLMTEST")
+@scenario("integration/Features/EM_Workflows.feature", "New Manuscript creation for PCLMTEST")
 def test_new_manuscript_pclmtest(driver_get_bdd):
     pass
 
-@scenario("Features/EM_Workflows.feature", "New Manuscript creation")
+@scenario("integration/Features/EM_Workflows.feature", "New Manuscript creation")
 def test_new_manuscript(driver_get_bdd):
     pass
 
-@scenario("Features/EM_Workflows.feature", "New Manuscript creation for PONETEST")
+@scenario("integration/Features/EM_Workflows.feature", "New Manuscript creation for PONETEST")
 def test_new_manuscript_ponetest(driver_get_bdd):
     pass
 
-@scenario("Features/EM_Workflows.feature", "PFA scenario")
+@scenario("integration/Features/EM_Workflows.feature", "PFA scenario")
 def test_pfa_scenario(driver_get_bdd):
     pass
 
