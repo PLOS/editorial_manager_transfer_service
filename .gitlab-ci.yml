@@ -91,7 +91,7 @@ integration_tests:
     - cd tests
     - mkdir ./pytest_report
     - pipenv install
-    - pipenv run pytest -v -n auto -l --reruns 1 --reruns-delay 3 --timeout=600 --html='./pytest_report/pytest_report.html' 
+    - pipenv run pytest -v -n auto -l --reruns 1 --reruns-delay 3 --timeout=600 --html='./pytest_report/pytest_report.html' integration/
   artifacts:
     when: always
     paths:
