@@ -9,6 +9,7 @@ import os
 from typing import List
 
 from plugins.editorial_manager_transfer_service import logger_messages
+from plugins.editorial_manager_transfer_service.enums.report_state import ReportState
 from plugins.editorial_manager_transfer_service.file_exporter import ExportFileCreation
 from utils.logger import get_logger
 
@@ -35,55 +36,59 @@ class FileTransferService:
             self.files_to_delete: List[str] = list()
             self._initialized = True
 
-    def get_export_file_creator(self, journal_code: str, article_id: str) -> ExportFileCreation | None:
+    def get_export_file_creator(self, journal_code: str, article_id: int,
+                                can_create: bool = False) -> ExportFileCreation | None:
         """
         Gets the export file creator for the given article.
+        :param can_create: True if this fetch can create the export file creator, false otherwise.
         :param journal_code: The journal code of the journal where the article lives.
         :param article_id: The article id.
         :return: The export file creator.
         """
 
         dictionary_identifier: str = self.__get_dictionary_identifier(journal_code, article_id)
+        file_creator: ExportFileCreation | None = self.exports.get(dictionary_identifier)
 
-        if dictionary_identifier not in self.exports:
-            file_creator = ExportFileCreation(journal_code, article_id)
-            if file_creator.in_error_state:
+        if not file_creator:
+            if can_create:
+                file_creator = ExportFileCreation(journal_code, article_id)
+                self.exports[dictionary_identifier] = file_creator
+            else:
                 return None
-            self.exports[dictionary_identifier] = file_creator
         return self.exports[dictionary_identifier]
 
     @staticmethod
-    def __get_dictionary_identifier(journal_code: str, article_id: str) -> str:
+    def __get_dictionary_identifier(journal_code: str, article_id: int) -> str:
         """
         Gets the dictionary identifier for the given article.
         :param journal_code: The journal code of the journal where the article lives.
         :param article_id: The article id.
         :return: The dictionary identifier.
         """
-        return f"{journal_code}-{article_id}"
+        return f"{journal_code}-{article_id}".strip()
 
-    def get_export_zip_filepath(self, journal_code: str, article_id: str) -> str | None:
+    def get_export_zip_filepath(self, journal_code: str, article_id: int) -> str | None:
         """
         Gets the export zip file path for the given article.
         :param journal_code: The journal code of the journal the article lives in.
         :param article_id: The article id.
         :return: The export zip file path.
         """
-        file_export_creator = self.get_export_file_creator(journal_code, article_id)
+        file_export_creator = self.get_export_file_creator(journal_code, article_id, True)
         return file_export_creator.get_zip_filepath() if file_export_creator else None
 
-    def get_export_go_filepath(self, journal_code: str, article_id: str) -> str | None:
+    def get_export_go_filepath(self, journal_code: str, article_id: int) -> str | None:
         """
         Gets the export go file path for the given article.
         :param journal_code: The journal code of the journal the article lives in.
         :param article_id: The article id.
         :return: The export go file path.
         """
-        file_export_creator = self.get_export_file_creator(journal_code, article_id)
+        file_export_creator = self.get_export_file_creator(journal_code, article_id, True)
         return file_export_creator.get_go_filepath() if file_export_creator else None
 
     def log_export_error(self, journal_code: str,
-                         article_id: str,
+                         article_id: int,
                          error_message: str = None,
                          error: Exception = None) -> None:
         """
@@ -95,10 +100,11 @@ class FileTransferService:
         """
         file_export_creator = self.get_export_file_creator(journal_code, article_id)
         if file_export_creator:
-            file_export_creator.log_error(logger_messages.export_process_failed_ingest(article_id, error_message), error)
+            file_export_creator.log_error(logger_messages.export_process_failed_ingest(article_id, error_message),
+                                          error, stage=ReportState.FAILED_INGEST)
 
-    def log_export_success(self, journal_code: str,
-                           article_id: str) -> None:
+    def log_export_success_go_file(self, journal_code: str,
+                                   article_id: int) -> None:
         """
         Logs the success message for when an article has completed a journey to Editorial Manager.
         :param journal_code: The journal code of the journal where the article lives.
@@ -106,9 +112,21 @@ class FileTransferService:
         """
         file_export_creator = self.get_export_file_creator(journal_code, article_id)
         if file_export_creator:
-            file_export_creator.log_success()
+            file_export_creator.log_success_go_file()
+            self.delete_export_files(journal_code, article_id)
 
-    def delete_export_files(self, journal_code: str, article_id: str) -> None:
+    def log_export_success_zip_file(self, journal_code: str,
+                                    article_id: int) -> None:
+        """
+        Logs the success message for when an article has completed a journey to Editorial Manager.
+        :param journal_code: The journal code of the journal where the article lives.
+        :param article_id: The article id.
+        """
+        file_export_creator = self.get_export_file_creator(journal_code, article_id)
+        if file_export_creator:
+            file_export_creator.log_success_zip_file()
+
+    def delete_export_files(self, journal_code: str, article_id: int) -> None:
         """
         Deletes the export files for the given article.
         :param journal_code: The journal code of the journal the article lives in.
@@ -142,13 +160,13 @@ class FileTransferService:
             os.remove(filepath)
         except OSError as e:
             logger.exception(e)
-            logger.error(logger_messages.excport_process_failed_delete_file(filepath))
+            logger.error(logger_messages.export_process_failed_delete_file(filepath))
             return False
 
         return True
 
 
-def get_export_zip_filepath(journal_code: str, article_id: str) -> str | None:
+def get_export_zip_filepath(journal_code: str, article_id: int) -> str | None:
     """
     Gets the zip file path for a given article.
     :param journal_code: The journal code of the journal the article lives in.
@@ -158,7 +176,7 @@ def get_export_zip_filepath(journal_code: str, article_id: str) -> str | None:
     return FileTransferService().get_export_zip_filepath(journal_code, article_id)
 
 
-def get_export_go_filepath(journal_code: str, article_id: str) -> str | None:
+def get_export_go_filepath(journal_code: str, article_id: int) -> str | None:
     """
     Gets the export file path for a go file created for a given article.
     :param journal_code: The journal code of the journal the article lives in.
@@ -168,17 +186,26 @@ def get_export_go_filepath(journal_code: str, article_id: str) -> str | None:
     return FileTransferService().get_export_go_filepath(journal_code, article_id)
 
 
-def export_success_callback(journal_code: str, article_id: str) -> None:
+def export_success_callback_go_file(journal_code: str, article_id: int) -> None:
     """
     The callback in case of a successful export.
     :param journal_code: The journal code of the journal the article lives in.
     :param article_id: The article id.
     """
-    FileTransferService().log_export_success(journal_code, article_id)
-    FileTransferService().delete_export_files(journal_code, article_id)
+    FileTransferService().log_export_success_go_file(journal_code, article_id)
 
 
-def export_failure_callback(journal_code: str, article_id: str, error_message: str = None, error: Exception = None) -> None:
+def export_success_callback_zip_file(journal_code: str, article_id: int) -> None:
+    """
+    The callback in case of a successful export.
+    :param journal_code: The journal code of the journal the article lives in.
+    :param article_id: The article id.
+    """
+    FileTransferService().log_export_success_zip_file(journal_code, article_id)
+
+
+def export_failure_callback(journal_code: str, article_id: int, error_message: str = None,
+                            error: Exception = None) -> None:
     """
     The callback in case of a failed export.
     :param error: The exception, if there is one.

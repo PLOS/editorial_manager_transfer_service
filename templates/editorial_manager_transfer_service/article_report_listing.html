@@ -1,0 +1,66 @@
+{% extends "admin/core/base.html" %}
+
+{% block title %}All Article Transfer Reports{% endblock %}
+{% block title-section %}All Article Transfer Reports{% endblock %}
+
+{% block breadcrumbs %}
+    {{ block.super }}
+    <li><a href="{% url 'editorial_manager_transfer_service_manager' %}">Editorial Manager Transfer Service</a></li>
+    <li><a href="{% url 'editorial_manager_transfer_service_manager_logs' %}">Transfer Logs</a></li>
+    <li>Article</li>
+    <li>{{ article.title|safe }}</li>
+{% endblock %}
+
+{% block body %}
+    <div class="large-12 columns">
+        <div class="box">
+            <div class="title-area">
+                <h2>Reports for Article (ID: {{ article.pk }})</h2>
+            </div>
+            <div class="content">
+                <table class="small article_list" id="failed_bundle_transfer_reports">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Status</th>
+                        <th>Resolved</th>
+                        <th>Date Started</th>
+                        <th>Date Stopped</th>
+                        {% if request.user.is_staff %}
+                            <th></th>
+                        {% endif %}
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    {% for report in reports %}
+                        <tr>
+                            <td>{{ report.pk }}</td>
+                            <td>{{ report.get_report_state_display }}</td>
+                            <td>{{ report.resolved }}</td>
+                            <td>
+                                {{ report.message_date_time_start }}
+                            </td>
+                            <td>
+                                {{ report.message_date_time_stop }}
+                            </td>
+                            {% if request.user.is_staff %}
+                                <td>
+                                    <a href="{% url 'editorial_manager_transfer_service_manager_report_logs' report.pk %}"
+                                       class="small button info">
+                                        <i class="fa fa-paperclip" aria-hidden="true">&nbsp;</i> View Logs
+                                    </a>
+                                </td>
+                            {% endif %}
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6">No reports to show.</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}

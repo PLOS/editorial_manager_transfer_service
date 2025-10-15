@@ -12,16 +12,17 @@ import zipfile
 from collections.abc import Sequence
 from typing import List
 
-from django.core.exceptions import ObjectDoesNotExist
-
 import plugins.editorial_manager_transfer_service.consts as consts
 import plugins.editorial_manager_transfer_service.logger_messages as logger_messages
 from core.models import File
 from journal.models import Journal
+from plugins.editorial_manager_transfer_service.enums.report_state import ReportState
 from plugins.editorial_manager_transfer_service.enums.transfer_log_message_type import TransferLogMessageType
 from plugins.editorial_manager_transfer_service.models import TransferLogs
+from plugins.editorial_manager_transfer_service.utils.transfer_report import get_or_create_transfer_report, \
+    resolve_transfer_report
+from plugins.production_transporter.utilities import data_fetch
 from submission.models import Article
-from utils import setting_handler
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -73,6 +74,9 @@ class ExportFileCreation:
             self.in_error_state = True
             return
         self.export_folder = export_folders
+
+        # Creates or fetches a report to track where this process is.
+        self.transfer_report = get_or_create_transfer_report(self.journal, self.article)
 
         # Start export process
         self.__create_export_file()
@@ -182,13 +186,7 @@ class ExportFileCreation:
         :param setting_name: The name of the setting to get the value for.
         :return: The value for the given setting or a blank string, if the process failed.
         """
-        try:
-            return setting_handler.get_setting(setting_group_name=consts.PLUGIN_SETTINGS_GROUP_NAME,
-                                               setting_name=setting_name, journal=self.journal, ).processed_value
-        except ObjectDoesNotExist as e:
-            self.log_error("Could not get the following setting, '{0}'".format(setting_name), e)
-            self.in_error_state = True
-            return ""
+        return data_fetch.fetch_setting(self.journal, consts.PLUGIN_SETTINGS_GROUP_NAME, setting_name)
 
     def __create_go_xml_file(self, metadata_filename: str, article_filenames: Sequence[str], filename: str):
         """
@@ -254,22 +252,14 @@ class ExportFileCreation:
         :param article_id: The ID of the article.
         :return: The article object with the given article ID.
         """
-        # If no article ID or journal, return an error.
-        if not article_id or article_id <= 0:
-            self.log_error(logger_messages.process_failed_no_article_id_provided())
+        logger.debug(logger_messages.process_fetching_article(article_id))
+
+        article: Article | None = data_fetch.fetch_article(journal, article_id)
+        if article is None:
             self.in_error_state = True
             return None
 
-        article: Article | None = None
-
-        logger.debug(logger_messages.process_fetching_article(article_id))
-        try:
-            article = Article.get_article(journal, "id", article_id)
-            logger.debug(logger_messages.process_finished_fetching_article(article_id))
-        except Article.DoesNotExist as e:
-            self.log_error(logger_messages.process_failed_fetching_article(article_id), e)
-            self.in_error_state = True
-
+        logger.debug(logger_messages.process_finished_fetching_article(article_id))
         return article
 
     def __fetch_journal(self, janeway_journal_code: str | None) -> Journal | None:
@@ -278,43 +268,51 @@ class ExportFileCreation:
         :param janeway_journal_code: The code of the Janeway journal to fetch.
         :return: The journal object with the given Janeway journal code, if there is one. None otherwise.
         """
-        # If no journal code, return an error.
-        if not janeway_journal_code or len(janeway_journal_code) <= 0:
-            self.log_error(logger_messages.process_failed_no_janeway_journal_code_provided())
+        # Attempt to get the journal.
+        logger.debug(logger_messages.process_fetching_journal(janeway_journal_code))
+
+        journal: Journal | None = data_fetch.fetch_journal_data(janeway_journal_code)
+        if journal is None:
             self.in_error_state = True
             return None
 
-        journal: Journal | None = None
-
-        # Attempt to get the journal.
-        logger.debug(logger_messages.process_fetching_journal(janeway_journal_code))
-        try:
-            journal = Journal.objects.get(code=janeway_journal_code)
-            logger.debug(logger_messages.process_finished_fetching_journal(janeway_journal_code))
-        except Journal.DoesNotExist as e:
-            self.log_error(logger_messages.process_failed_fetching_journal(janeway_journal_code), e)
-            self.in_error_state = True
+        logger.debug(logger_messages.process_finished_fetching_journal(janeway_journal_code))
 
         return journal
 
-    def log_error(self, message: str, error: Exception = None) -> None:
+    def log_error(self, message: str, error: Exception = None,
+                  stage: ReportState = ReportState.FAILED_BUNDLING) -> None:
         """
         Logs the given error message in both the database and plaintext logs.
         :param message: The message to log.
         :param error: The exception, if there is one.
+        :param stage: Specify which stage this transfer is in.
         """
         logger.exception(error)
         logger.error(message)
-        TransferLogs.objects.create(journal=self.journal, article=self.article, message=message,
+        if self.transfer_report.report_state != stage:
+            self.transfer_report.report_state = stage
+            self.transfer_report.save()
+        TransferLogs.objects.create(report=self.transfer_report, journal=self.journal, article=self.article,
+                                    message=message,
                                     message_type=TransferLogMessageType.EXPORT, success=False)
 
-    def log_success(self) -> None:
+    def log_success_go_file(self) -> None:
         """
         Logs a success message in both the database and plaintext logs.
         """
-        TransferLogs.objects.create(journal=self.journal, article=self.article,
-                                    message=logger_messages.export_process_succeeded(self.article_id),
+        TransferLogs.objects.create(report=self.transfer_report, journal=self.journal, article=self.article,
+                                    message=logger_messages.export_go_file_process_succeeded(self.article_id),
                                     message_type=TransferLogMessageType.EXPORT, success=True)
+
+    def log_success_zip_file(self) -> None:
+        """
+        Logs a success message in both the database and plaintext logs.
+        """
+        TransferLogs.objects.create(report=self.transfer_report, journal=self.journal, article=self.article,
+                                    message=logger_messages.export_zip_file_process_succeeded(self.article_id),
+                                    message_type=TransferLogMessageType.EXPORT, success=True)
+        resolve_transfer_report(self.transfer_report)
 
     @staticmethod
     def __fetch_article_files(article: Article) -> List[File]:
