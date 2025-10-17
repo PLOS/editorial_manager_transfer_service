@@ -1,18 +1,18 @@
-{% load settings text %}{# A template for encoding an submission.models.Article as JATS 1.2 #}{# Context: `article` `body` `include_declaration` `answer_fields` #}
+{% load settings text %}{# A template for encoding an submission.models.Article as JATS 1.2 #}{# Context: `article` `body` `include_declaration` `answer_fields` `license` `affiliations`#}
 {% if include_declaration %}
     <?xml version="1.0" encoding="UTF-8"?>
     <!DOCTYPE article SYSTEM "JATS-archivearticle1-mathml3.dtd">
 {% endif %}
 {% if validation_error %}<!-- {{ validation_error }} -->{% endif %}
 <article
-        article-type="{{ article.jats_article_type|default:'research-article' }}"
-        dtd-version="1.2d1"
+        article-type="{{ article.section|default:'research-article' }}"
+        dtd-version="1.1d1"
         xml:lang="{{ article.iso639_1_lang_code }}"
         xmlns:xlink="http://www.w3.org/1999/xlink"
 >
     <front>
         <journal-meta>
-            <journal-id journal-id-type="publisher">{{ article.license.text }}</journal-id>
+            <journal-id journal-id-type="publisher">{{ license }}</journal-id>
             <journal-title-group>
                 <journal-title>{{ article.journal.name }}</journal-title>
             </journal-title-group>
@@ -48,7 +48,7 @@
                             {% if author.order %}
                                 <role content-type="{{ author.order }}"/>
                             {% endif %}
-                            {% if article.journal|setting:'use_credit' and author.credits.exists %}
+                            {% if author.credits.exists %}
                                 {% for credit_record in author.credits %}
                                     <role vocab="CRediT" vocab-term="{{ credit_record.get_role_display }}"/>
                                 {% endfor %}

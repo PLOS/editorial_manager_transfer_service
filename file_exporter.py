@@ -19,9 +19,11 @@ from journal.models import Journal
 from plugins.editorial_manager_transfer_service.enums.report_state import ReportState
 from plugins.editorial_manager_transfer_service.enums.transfer_log_message_type import TransferLogMessageType
 from plugins.editorial_manager_transfer_service.models import TransferLogs
+from plugins.editorial_manager_transfer_service.utils.jats import get_xml_license_code, generate_jats_metadata
 from plugins.editorial_manager_transfer_service.utils.transfer_report import get_or_create_transfer_report, \
     resolve_transfer_report
 from plugins.production_transporter.utilities import data_fetch
+from plugins.editorial_manager_transfer_service.utils.settings import get_license_code, get_submission_partner_code, get_journal_code
 from submission.models import Article
 from utils.logger import get_logger
 
@@ -56,6 +58,7 @@ class ExportFileCreation:
         self.article: Article | None = None
         self.journal: Journal | None = None
         self.export_folder: str | None = None
+        self.xml_filepath: str | None = None
 
         # Gets the journal
         self.journal: Journal | None = self.__fetch_journal(janeway_journal_code)
@@ -112,12 +115,11 @@ class ExportFileCreation:
             self.in_error_state = True
             return
 
-        # TODO: Attempt to create the metadata file.
-        # metadata_file: File | None = self.__create_metadata_file(self.article)
-        # if metadata_file is None:
-        #     logger.error(logger_messages.process_failed_fetching_metadata(self.article_id))
-        #     self.in_error_state = True
-        #     return
+        # Attempt to get the metadata file.
+        if self.__get_xml_filepath() is None:
+            logger.error(logger_messages.process_failed_fetching_metadata(self.article_id))
+            self.in_error_state = True
+            return
 
         # Attempt to fetch the article files.
         article_files: Sequence[File] = self.__fetch_article_files(self.article)
@@ -130,16 +132,14 @@ class ExportFileCreation:
 
         self.zip_filepath: str = os.path.join(self.export_folder, "{0}.zip".format(prefix))
         with zipfile.ZipFile(self.zip_filepath, "w") as zipf:
-            # TODO: zipf.write(metadata_file.get_file_path(self.article))
+            zipf.write(self.__get_xml_filepath())
             for article_file in article_files:
                 zipf.write(article_file.get_file_path(self.article))
             filenames: Sequence[str] = zipf.namelist()
             zipf.close()
 
         # Remove the manuscript
-
-        # TODO: Remove below and replace with 'self.__create_go_xml_file(metadata_file.uuid_filename, filenames, prefix)'
-        self.__create_go_xml_file("fake name", filenames, prefix)
+        self.__create_go_xml_file(os.path.basename(self.__get_xml_filepath()), filenames, prefix)
 
     def get_license_code(self) -> str:
         """
@@ -147,7 +147,7 @@ class ExportFileCreation:
         :return: The license code or None, if the process failed.
         """
         if not self.__license_code:
-            self.__license_code: str = self.get_setting(consts.PLUGIN_SETTINGS_LICENSE_CODE)
+            self.__license_code: str = get_license_code(self.journal)
         return self.__license_code
 
     def get_journal_code(self) -> str:
@@ -156,7 +156,7 @@ class ExportFileCreation:
         :return: The journal code or None, if the process failed.
         """
         if not self.__journal_code:
-            self.__journal_code: str = self.get_setting(consts.PLUGIN_SETTINGS_JOURNAL_CODE)
+            self.__journal_code: str = get_journal_code(self.journal)
         return self.__journal_code
 
     def get_submission_partner_code(self) -> str:
@@ -165,7 +165,7 @@ class ExportFileCreation:
         :return: The submission partner code or None, if the process failed.
         """
         if not self.__submission_partner_code:
-            self.__submission_partner_code: str = self.get_setting(consts.PLUGIN_SETTINGS_SUBMISSION_PARTNER_CODE)
+            self.__submission_partner_code: str = get_submission_partner_code(self.journal)
         return self.__submission_partner_code
 
     def can_export(self) -> bool:
@@ -179,14 +179,6 @@ class ExportFileCreation:
                 self.get_license_code() is not None and
                 self.get_journal_code() is not None and
                 self.get_submission_partner_code() is not None)
-
-    def get_setting(self, setting_name: str) -> str:
-        """
-        Gets the setting for the given setting name.
-        :param setting_name: The name of the setting to get the value for.
-        :return: The value for the given setting or a blank string, if the process failed.
-        """
-        return data_fetch.fetch_setting(self.journal, consts.PLUGIN_SETTINGS_GROUP_NAME, setting_name)
 
     def __create_go_xml_file(self, metadata_filename: str, article_filenames: Sequence[str], filename: str):
         """
@@ -217,8 +209,7 @@ class ExportFileCreation:
         parameters: ETree.Element = ETree.SubElement(header, consts.GO_FILE_ELEMENT_TAG_PARAMETERS)
         parameter: ETree.Element = ETree.SubElement(parameters, consts.GO_FILE_ELEMENT_TAG_PARAMETER)
         parameter.set(consts.GO_FILE_ATTRIBUTE_ELEMENT_NAME_KEY, consts.GO_FILE_PARAMETER_ELEMENT_NAME_VALUE)
-        parameter.set(consts.GO_FILE_PARAMETER_ELEMENT_VALUE_KEY,
-                      "{0}_{1}".format(self.get_submission_partner_code(), self.get_license_code()))
+        parameter.set(consts.GO_FILE_PARAMETER_ELEMENT_VALUE_KEY, get_xml_license_code(self.journal))
 
         # Begin the filegroup.
         filegroup: ETree.Element = ETree.SubElement(go, consts.GO_FILE_ELEMENT_TAG_FILEGROUP)
@@ -237,13 +228,14 @@ class ExportFileCreation:
         self.go_filepath = os.path.join(self.export_folder, "{0}.go.xml".format(filename))
         tree.write(self.go_filepath)
 
-    def __create_metadata_file(self, article: Article) -> File | None:
+    def __get_xml_filepath(self) -> str | None:
         """
         Creates the metadata file based on the given article.
-        :param article: The article to convert to JATS.
-        :return:
+        :return:The filepath to the JATS XML file.
         """
-        pass
+        if not self.xml_filepath:
+            self.xml_filepath = generate_jats_metadata(self.journal, self.article, self.export_folder)
+        return self.xml_filepath
 
     def __fetch_article(self, journal: Journal | None, article_id: int | None) -> Article | None:
         """
