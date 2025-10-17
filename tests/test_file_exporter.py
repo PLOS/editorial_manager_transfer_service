@@ -16,14 +16,15 @@ import plugins.editorial_manager_transfer_service.tests.utils.article_creation_u
 from submission.models import Article
 
 
-def _get_setting(self, setting_name: str) -> str:
-    match setting_name:
-        case consts.PLUGIN_SETTINGS_LICENSE_CODE:
-            return "LCODE"
-        case consts.PLUGIN_SETTINGS_JOURNAL_CODE:
-            return "JOURNAL"
-        case consts.PLUGIN_SETTINGS_SUBMISSION_PARTNER_CODE:
-            return "SUBMISSION_PARTNER"
+def _get_submission_partner_code(self):
+    return "SUBMISSION_PARTNER"
+
+def _get_license_code(self):
+    return "LCODE"
+
+def _get_journal_code(self):
+    return "JOURNAL_CODE"
+
 
 
 class TestFileCreation(TestCase):
@@ -45,9 +46,11 @@ class TestFileCreation(TestCase):
         shutil.rmtree(article_utils._get_article_export_folders())
 
     @given(article=article_utils.create_article())
-    @patch.object(file_exporter.ExportFileCreation, 'get_setting', new=_get_setting)
     @patch('plugins.editorial_manager_transfer_service.file_exporter.get_article_export_folders',
            new=article_utils._get_article_export_folders)
+    @patch.object(file_exporter.ExportFileCreation, 'get_submission_partner_code', new=_get_submission_partner_code)
+    @patch.object(file_exporter.ExportFileCreation, 'get_license_code', new=_get_license_code)
+    @patch.object(file_exporter.ExportFileCreation, 'get_journal_code', new=_get_journal_code)
     @hypothesis_settings(max_examples=5)
     def test_regular_article_creation_process(self, article: Article) -> None:
         """
@@ -57,6 +60,9 @@ class TestFileCreation(TestCase):
         article_id: int = article.pk
 
         exporter = file_exporter.ExportFileCreation(journal.code, article_id)
+        self.assertEqual(_get_submission_partner_code(None), exporter.get_submission_partner_code())
+        self.assertEqual(_get_license_code(None), exporter.get_license_code())
+        self.assertEqual(_get_journal_code(None), exporter.get_journal_code())
         self.assertTrue(exporter.can_export())
         self.assertEqual(article_id, exporter.article_id)  # add assertion here
 

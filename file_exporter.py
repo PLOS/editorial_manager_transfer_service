@@ -117,6 +117,7 @@ class ExportFileCreation:
 
         # Attempt to get the metadata file.
         if self.__get_xml_filepath() is None:
+            print("The export file is not exported.")
             logger.error(logger_messages.process_failed_fetching_metadata(self.article_id))
             self.in_error_state = True
             return
@@ -235,6 +236,9 @@ class ExportFileCreation:
         """
         if not self.xml_filepath:
             self.xml_filepath = generate_jats_metadata(self.journal, self.article, self.export_folder)
+            if not self.xml_filepath:
+                print("Failed to generate XML file.")
+                self.in_error_state = True
         return self.xml_filepath
 
     def __fetch_article(self, journal: Journal | None, article_id: int | None) -> Article | None:

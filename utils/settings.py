@@ -12,6 +12,7 @@ from utils.logger import get_logger
 logger = get_logger(__name__)
 
 def get_submission_partner_code(journal: Journal, fetch_fresh: bool = False) -> str:
+
     return data_fetch.fetch_setting(journal, consts.PLUGIN_SETTINGS_GROUP_NAME, "submission_partner_code", fetch_fresh=fetch_fresh)
 
 def get_license_code(journal: Journal, fetch_fresh: bool = False) -> str:

@@ -23,7 +23,7 @@ def fetch_answer_fields_for_jats(article: Article, fetch_fresh: bool = False) ->
         answer_fields = cache.get(f"answer_fields_jats_{article.pk}", None)
 
     if not answer_fields:
-        answer_fields = Article.objects.filter(article=article).prefetch_related('field').values('field', 'answer').distinct()
+        answer_fields = Article.objects.filter(article=article).prefetch_related('field').all()
         if not answer_fields:
             logger.error("Couldn't fetch answer fields.")
             return None

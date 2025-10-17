@@ -28,11 +28,24 @@ def generate_jats_metadata(journal: Journal, article: Article, article_folder: s
     :return: Gets the filepath of the generated JATS file
     """
     logger.debug('Generating JATS file...')
+
+    if not article:
+        logger.error('No article given')
+        return None
+
+    if not journal:
+        logger.error('No journal given')
+        return None
+
+    if not article_folder:
+        logger.error('No article folder given')
+        return None
+
     template = consts.JATS_XML_FILE
 
     answer_fields = fetch_answer_fields_for_jats(article)
-    if not answer_fields or len(answer_fields) <= 0:
-        return None
+    if not answer_fields:
+        answer_fields = []
 
     context = {
         'article': article,
@@ -40,6 +53,7 @@ def generate_jats_metadata(journal: Journal, article: Article, article_folder: s
         'body': True,
         'answer_fields': answer_fields,
         'license': get_xml_license_code(journal),
+        'affiliations': []
     }
 
     try:
@@ -50,6 +64,8 @@ def generate_jats_metadata(journal: Journal, article: Article, article_folder: s
         return None
     except TemplateSyntaxError as e:
         logger.exception('JATS template syntax error for article {ID: {article_id}).'.format(article_id=article.pk), e)
+        print('JATS template syntax error for article {ID: {article_id}).'.format(article_id=article.pk))
+        print(e)
         return None
 
     file_name = '{uuid}_{id}.xml'.format(uuid=uuid.uuid4(), id=article.pk)

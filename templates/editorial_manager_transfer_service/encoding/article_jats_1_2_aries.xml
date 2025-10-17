@@ -25,16 +25,12 @@
             <article-categories>
                 {% if article.section.jats_article_type %}
                     <subj-group subj-group-type="Article Type">
-                        {% for item in article.section %}
-                            <subject id="atype-{{ item.id }}">{{ item.jats_article_type }}</subject>
-                        {% endfor %}
+                        <subject id="atype-{{ article.section.id }}">{{ article.section.jats_article_type }}</subject>
                     </subj-group>
                 {% endif %}
                 {% if article.section.name %}
                     <subj-group subj-group-type="Category">
-                        {% for item in article.section %}
-                            <subject>{{ item.name }}</subject>
-                        {% endfor %}
+                        <subject>{{ article.section.name }}</subject>
                     </subj-group>
                 {% endif %}
             </article-categories>
@@ -48,14 +44,18 @@
                             {% if author.order %}
                                 <role content-type="{{ author.order }}"/>
                             {% endif %}
-                            {% if author.credits.exists %}
+                            {% if author.credits %}
                                 {% for credit_record in author.credits %}
                                     <role vocab="CRediT" vocab-term="{{ credit_record.get_role_display }}"/>
                                 {% endfor %}
                             {% endif %}
                             <name>
-                                <surname>{{ author.last_name }}</surname>
-                                <given-names>{{ author.given_names }}</given-names>
+                                {% if author.last_name %}
+                                    <surname>{{ author.last_name }}</surname>
+                                {% endif %}
+                                {% if author.given_names %}
+                                    <given-names>{{ author.given_names }}</given-names>
+                                {% endif %}
                                 {% if author.name_prefix %}
                                     <prefix>{{ author.name_prefix }}</prefix>
                                 {% endif %}
@@ -137,16 +137,16 @@
                 </history>
             {% endif %}
             <abstract>{{ article.get_clean_abstract }}</abstract>
-            {% if article.keywords.exists %}
+            {% if article.keywords %}
                 <kwd-group xml:lang="en">
-                    {% for keyword in article.keywords.all %}
+                    {% for keyword in article.keywords %}
                         <kwd>{{ keyword.word }}</kwd>
                     {% endfor %}
                 </kwd-group>
             {% endif %}
-            {% if article.funders.exists() %}
+            {% if article.funders %}
                 <funding-group>
-                    {% for funder in article.funders.all %}
+                    {% for funder in article.funders %}
                         <award-group>
                             <funding-source>{{ funder.name }}
                                 {% if funder.fundref_id %}
@@ -174,9 +174,9 @@
                 </funding-group>
             {% endif %}
 
-            {% if article.data_figure_files.exists() %}
+            {% if article.data_figure_files %}
                 <counts>
-                    <fig-count count="{{ article.data_figure_files.all().count() }}"/>
+                    <fig-count count="{{ article.data_figure_files.count }}"/>
                 </counts>
             {% endif %}
             {% if answer_fields %}
@@ -197,7 +197,7 @@
                 {% for figure in article.data_figure_files %}
                     <fig fig-type="color figure" specific-use="High_res_figure">
                         <label>Figure {{ forloop.counter }}</label>
-                        <graphic xlink:href="{{ figure.name() }}"/>
+                        <graphic xlink:href="{{ figure.name }}"/>
                     </fig>
                 {% endfor %}
             {% endif %}

@@ -18,12 +18,14 @@ from core import (
 )
 from core import settings
 from core.models import File, Account
+from hypothesis.strategies import characters
 from journal.models import Journal
 from plugins.editorial_manager_transfer_service import consts
-from submission.models import Article
+from submission.models import Article, Field, FieldAnswer
 
 uuid4_regex = re.compile('^([a-z0-9]{8}(-[a-z0-9]{4}){3}-[a-z0-9]{12})$')
 valid_filename_regex = re.compile("^[\w\-. ]+$")
+journal_code_regex = re.compile('^[a-z0-9]{1,40}$')
 
 EXPORT_FOLDER = os.path.join(settings.BASE_DIR, "collected-static", consts.SHORT_NAME, "export")
 
@@ -81,9 +83,22 @@ def create_journal(draw) -> Journal:
     :param draw: The Hypothesis object provided by the hypothesis framework.
     :return: The newly created journal.
     """
-    code = draw(st.text(min_size=1, max_size=40))
+    code = draw(st.from_regex(journal_code_regex))
     journal: Journal = Journal.objects.create(code=code)
     return journal
+
+@st.composite
+def create_field(draw, journal: Journal) -> Field:
+    name = draw(st.text(alphabet=characters(codec='utf-8'), min_size=1, max_size=40))
+    order = 0
+    field: Field = Field.objects.create(name=name, journal=journal, order=order)
+    return field
+
+@st.composite
+def create_answer_field(draw, article: Article) -> FieldAnswer:
+    answer = draw(st.text(alphabet=characters(codec='utf-8'), min_size=1, max_size=40))
+    field: FieldAnswer = FieldAnswer.objects.create(field=draw(create_field(article.journal)), answer=answer, article=article)
+    return field
 
 
 @st.composite
@@ -171,6 +186,10 @@ def create_article(draw) -> Article:
     for i in range(number_of_files):
         data_figure: File = draw(create_txt_file(article=article))
         article.data_figure_files.add(data_figure)
+
+    number_of_answers: int = draw(st.integers(min_value=0, max_value=20))
+    for i in range(number_of_answers):
+        draw(create_answer_field(article=article))
 
     article.save()
 
