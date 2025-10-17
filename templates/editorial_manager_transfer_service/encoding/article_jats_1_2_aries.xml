@@ -1,4 +1,4 @@
-{% load settings text %}{# A template for encoding an submission.models.Article as JATS 1.2 #}{# Context: `article` `body` `include_declaration` `answer_fields` `license` `affiliations`#}
+{% load settings text %}{# A template for encoding an submission.models.Article as JATS 1.2 #}{# Context: `journal` `article` `body` `include_declaration` `answer_fields` `license` `affiliations`#}
 {% if include_declaration %}
     <?xml version="1.0" encoding="UTF-8"?>
     <!DOCTYPE article SYSTEM "JATS-archivearticle1-mathml3.dtd">
@@ -14,7 +14,7 @@
         <journal-meta>
             <journal-id journal-id-type="publisher">{{ license }}</journal-id>
             <journal-title-group>
-                <journal-title>{{ article.journal.name }}</journal-title>
+                <journal-title>{{ journal.name }}</journal-title>
             </journal-title-group>
         </journal-meta>
         <article-meta>
@@ -38,14 +38,14 @@
                 <article-title>{{ article.title }}</article-title>
             </title-group>
             <contrib-group>
-                {% for item in article.frozen_authors_for_jats_contribs %}
-                    {% with author=item.author affiliations=item.affiliations %}
+                {% for item in article.frozen_authors_for_jats_contribs.all %}
+                    {% with author=item.author.all affiliations=item.affiliations.all %}
                         <contrib contrib-type="author"{% if author.is_correspondence_author %} corresp="yes"{% endif %}>
                             {% if author.order %}
                                 <role content-type="{{ author.order }}"/>
                             {% endif %}
                             {% if author.credits %}
-                                {% for credit_record in author.credits %}
+                                {% for credit_record in author.credits.all %}
                                     <role vocab="CRediT" vocab-term="{{ credit_record.get_role_display }}"/>
                                 {% endfor %}
                             {% endif %}
@@ -114,9 +114,6 @@
             {% if article.has_manuscript_file %}
                 <ext-link specific-use="Manuscript" xlink:href="{{ article.pk }}.docx" xlink:title="Manuscript"/>
             {% endif %}
-            {% if article.url %}
-                <ext-link ext-link-type="uri" xlink:href="{{ article.url }}" xlink:title="Research dataset 1"/>
-            {% endif %}
 
             {% if article.date_submitted or article.date_accepted %}
                 <history>
@@ -139,14 +136,14 @@
             <abstract>{{ article.get_clean_abstract }}</abstract>
             {% if article.keywords %}
                 <kwd-group xml:lang="en">
-                    {% for keyword in article.keywords %}
+                    {% for keyword in article.keywords.all %}
                         <kwd>{{ keyword.word }}</kwd>
                     {% endfor %}
                 </kwd-group>
             {% endif %}
-            {% if article.funders %}
+            {% if article.funders.all %}
                 <funding-group>
-                    {% for funder in article.funders %}
+                    {% for funder in article.funders.all %}
                         <award-group>
                             <funding-source>{{ funder.name }}
                                 {% if funder.fundref_id %}
@@ -157,13 +154,13 @@
                                 <award-id>{{ funder.funding_id }}</award-id>
                             {% endif %}
                             {% if forloop.counter == 1 %}
-                                {% for author in article.frozen_authors_for_jats_contribs %}
+                                {% for author in article.frozen_authors_for_jats_contribs.all %}
                                     {% if author.is_correspondence_author and author.orcid %}
                                         <principal-award-recipient>
                                             <contrib-id contrib-id-type="orcid">{{ author.orcid }}</contrib-id>
                                             <name>
                                                 <surname>{{ author.last_name }}</surname>
-                                                <given-names>{{ author.given_names }}</given-names>
+                                                <given-name>{{ author.given_name }}</given-name>
                                             </name>
                                         </principal-award-recipient>
                                     {% endif %}
@@ -174,9 +171,9 @@
                 </funding-group>
             {% endif %}
 
-            {% if article.data_figure_files %}
+            {% if article.data_figure_files.all %}
                 <counts>
-                    <fig-count count="{{ article.data_figure_files.count }}"/>
+                    <fig-count count="{{ article.data_figure_files.all.count }}"/>
                 </counts>
             {% endif %}
             {% if answer_fields %}
@@ -194,7 +191,7 @@
     {% if body %}
         <body>
             {% if article.data_figure_files %}
-                {% for figure in article.data_figure_files %}
+                {% for figure in article.data_figure_files.all %}
                     <fig fig-type="color figure" specific-use="High_res_figure">
                         <label>Figure {{ forloop.counter }}</label>
                         <graphic xlink:href="{{ figure.name }}"/>
@@ -203,7 +200,7 @@
             {% endif %}
 
             {% if article.supplementary_files %}
-                {% for suppFile in article.supplementary_files %}
+                {% for suppFile in article.supplementary_files.all %}
                     <supplementary-material specific-use="supplementary_file" xlink:href="{{ suppFile }}">
                         <label>Video {{ forloop.counter }}</label>
                     </supplementary-material>

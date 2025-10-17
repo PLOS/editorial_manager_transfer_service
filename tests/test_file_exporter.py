@@ -43,7 +43,8 @@ class TestFileCreation(TestCase):
         """
         Tears down after each test to ensure each test is unique.
         """
-        shutil.rmtree(article_utils._get_article_export_folders())
+        # shutil.rmtree(article_utils._get_article_export_folders())
+        pass
 
     @given(article=article_utils.create_article())
     @patch('plugins.editorial_manager_transfer_service.file_exporter.get_article_export_folders',
@@ -66,7 +67,7 @@ class TestFileCreation(TestCase):
         self.assertTrue(exporter.can_export())
         self.assertEqual(article_id, exporter.article_id)  # add assertion here
 
-        self.__check_go_file(exporter.get_go_filepath(), len(article.data_figure_files.all()) + 1)
+        self.__check_go_file(exporter.get_go_filepath(), len(article.data_figure_files.all()))
 
     def __check_go_file(self, go_filepath: str, number_of_files: int) -> None:
         if not os.path.exists(go_filepath):

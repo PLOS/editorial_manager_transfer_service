@@ -48,6 +48,7 @@ def generate_jats_metadata(journal: Journal, article: Article, article_folder: s
         answer_fields = []
 
     context = {
+        'journal': journal,
         'article': article,
         'include_declaration': True,
         'body': True,
