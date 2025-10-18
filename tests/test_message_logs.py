@@ -31,8 +31,7 @@ class TestMessageLogs(TestCase):
         """
         Tears down after each test to ensure each test is unique.
         """
-        #shutil.rmtree(article_utils._get_article_export_folders())
-        pass
+        shutil.rmtree(article_utils._get_article_export_folders())
 
     @given(message=hypothesis_strategies.text(),
            message_type=hypothesis_strategies.sampled_from(TransferLogMessageType.choices),

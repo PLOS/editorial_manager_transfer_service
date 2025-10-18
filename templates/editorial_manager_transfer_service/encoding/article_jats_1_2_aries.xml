@@ -1,8 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE article SYSTEM "JATS-archivearticle1-mathml3.dtd">
 {% load settings text %}{# A template for encoding an submission.models.Article as JATS 1.2 #}{# Context: `journal` `article` `body` `include_declaration` `answer_fields` `license` `affiliations`#}
-{% if include_declaration %}
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE article SYSTEM "JATS-archivearticle1-mathml3.dtd">
-{% endif %}
 {% if validation_error %}<!-- {{ validation_error }} -->{% endif %}
 <article
         article-type="{{ article.section|default:'research-article' }}"
@@ -14,198 +12,191 @@
         <journal-meta>
             <journal-id journal-id-type="publisher">{{ license }}</journal-id>
             <journal-title-group>
-                <journal-title>{{ journal.name }}</journal-title>
+                <journal-title>{{ journal.name|safe }}</journal-title>
             </journal-title-group>
         </journal-meta>
         <article-meta>
             <article-id pub-id-type="manuscript">{{ article.pk }}</article-id>
-            {% if article.get_doi %}
-                <article-id pub-id-type="doi">{{ article.get_doi }}</article-id>
-            {% endif %}
+            {% if article.get_doi %}<article-id pub-id-type="doi">{{ article.get_doi }}</article-id>{% endif %}
             <article-categories>
                 {% if article.section.jats_article_type %}
-                    <subj-group subj-group-type="Article Type">
-                        <subject id="atype-{{ article.section.id }}">{{ article.section.jats_article_type }}</subject>
-                    </subj-group>
+                <subj-group subj-group-type="Article Type">
+                    <subject id="atype-{{ article.section.id }}">{{ article.section.jats_article_type }}</subject>
+                </subj-group>
                 {% endif %}
                 {% if article.section.name %}
-                    <subj-group subj-group-type="Category">
-                        <subject>{{ article.section.name }}</subject>
-                    </subj-group>
+                <subj-group subj-group-type="Category">
+                    <subject>{{ article.section.name|safe }}</subject>
+                </subj-group>
                 {% endif %}
             </article-categories>
             <title-group>
-                <article-title>{{ article.title }}</article-title>
+                <article-title>{{ article.title|safe }}</article-title>
             </title-group>
             <contrib-group>
-                {% for item in article.frozen_authors_for_jats_contribs.all %}
-                    {% with author=item.author.all affiliations=item.affiliations.all %}
-                        <contrib contrib-type="author"{% if author.is_correspondence_author %} corresp="yes"{% endif %}>
-                            {% if author.order %}
-                                <role content-type="{{ author.order }}"/>
-                            {% endif %}
-                            {% if author.credits %}
-                                {% for credit_record in author.credits.all %}
-                                    <role vocab="CRediT" vocab-term="{{ credit_record.get_role_display }}"/>
-                                {% endfor %}
-                            {% endif %}
-                            <name>
-                                {% if author.last_name %}
-                                    <surname>{{ author.last_name }}</surname>
-                                {% endif %}
-                                {% if author.given_names %}
-                                    <given-names>{{ author.given_names }}</given-names>
-                                {% endif %}
-                                {% if author.name_prefix %}
-                                    <prefix>{{ author.name_prefix }}</prefix>
-                                {% endif %}
-                            </name>
-                            {% if author.orcid %}
-                                <contrib-id contrib-id-type="orcid"{% if author.orcid_uri %}
-                                            authenticated="true"{% endif %}>{{ author.orcid }}
-                                </contrib-id>
-                            {% endif %}
-                            {% if author.email %}
-                                <email>{{ author.email }}</email>
-                            {% endif %}
-                            {% for affiliation in affiliations %}
-                                <xref ref-type="aff" rid="aff{{ forloop.parentloop.counter }}-{{ forloop.counter }}"/>
-                            {% endfor %}
-                        </contrib>
-                        {% if author.is_corporate %}
-                            <contrib contrib-type="author">
-                                <collab>{{ author.corporate_name }}</collab>
-                            </contrib>
-                        {% endif %}
-
-                        {% for affiliation in affiliations %}
-                            <aff id="aff{{ forloop.parentloop.counter }}-{{ forloop.counter }}">
-                                {% if affiliation.organization.uri %}
-                                    <institution-wrap>
-                                        <institution>{{ affiliation.organization.name }}</institution>
-                                        {% if affiliation.organization.ror_id %}
-                                            <institution-id institution-id-type="ROR">
-                                                {{ affiliation.organization.uri }}
-                                            </institution-id>
-                                        {% endif %}
-                                    </institution-wrap>
-                                {% else %}
-                                    <institution>{{ affiliation.organization.name }}</institution>
-                                {% endif %}
-                                {% if affiliation.organization.title %}
-                                    <institution
-                                            content-type="position">{{ affiliation.organization.title }}</institution>
-                                {% endif %}
-                                {% if affiliation.organization.department %}
-                                    <institution
-                                            content-type="dept">{{ affiliation.organization.department }}</institution>
-                                {% endif %}
-                                {% for addrline in affiliation.organization.location %}
-                                    <addr-line content-type="addrline{{ forloop.counter }}">{{ addrline }}</addr-line>
-                                {% endfor %}
-                                {% if affiliation.organization.country %}
-                                    <country specific-use="us">{{ affiliation.organization.country }}</country>
-                                {% endif %}
-                            </aff>
-                        {% endfor %}
-                    {% endwith %}
-                {% endfor %}
-            </contrib-group>
-            {% if article.has_manuscript_file %}
-                <ext-link specific-use="Manuscript" xlink:href="{{ article.pk }}.docx" xlink:title="Manuscript"/>
-            {% endif %}
-
-            {% if article.date_submitted or article.date_accepted %}
-                <history>
-                    {% if article.date_submitted %}
-                        <date date-type="received" iso-8601-date="{{ article.date_submitted|date:" Y-m-d" }}">
-                            <day>{{ article.date_submitted|date:"d" }}</day>
-                            <month>{{ article.date_submitted|date:"m" }}</month>
-                            <year>{{ article.date_submitted|date:"Y" }}</year>
-                        </date>
-                    {% endif %}
-                    {% if article.date_accepted %}
-                        <date date-type="accepted" iso-8601-date="{{ article.date_accepted|date:" Y-m-d" }}">
-                            <day>{{ article.date_accepted|date:"d" }}</day>
-                            <month>{{ article.date_accepted|date:"m" }}</month>
-                            <year>{{ article.date_accepted|date:"Y" }}</year>
-                        </date>
-                    {% endif %}
-                </history>
-            {% endif %}
-            <abstract>{{ article.get_clean_abstract }}</abstract>
-            {% if article.keywords %}
-                <kwd-group xml:lang="en">
-                    {% for keyword in article.keywords.all %}
-                        <kwd>{{ keyword.word }}</kwd>
+                {% for item in article.frozen_authors_for_jats_contribs %} {% with author=item.author affiliations=item.affiliations %}
+                <contrib contrib-type="author"{% if author.is_correspondence_author %} corresp="yes"{% endif %}>
+                {% if author.order %}<role content-type="{{ author.order }}"/>{% endif %}
+                {% if author.credits %}
+                    {% for credit_record in author.credits.all %}
+                    <role vocab="CRediT" vocab-term="{{ credit_record.get_role_display }}"/>
                     {% endfor %}
-                </kwd-group>
+                {% endif %}
+                <name>
+                    <surname>{{ author.last_name|safe }}</surname>
+                    <given-names>{{ author.given_names|safe }}</given-names>
+                    {% if author.name_prefix %}<prefix>{{ author.name_prefix|safe }}</prefix>{% endif %}
+                </name>
+                {% if author.orcid %}
+                    <contrib-id contrib-id-type="orcid"
+                    {% if author.orcid_uri %}
+                    authenticated="true"{% endif %}>
+                    {{ author.orcid }}
+                    </contrib-id>
+                {% endif %}
+            {% if author.email %}
+            <email>{{ author.email }}</email>
             {% endif %}
-            {% if article.funders.all %}
-                <funding-group>
-                    {% for funder in article.funders.all %}
-                        <award-group>
-                            <funding-source>{{ funder.name }}
-                                {% if funder.fundref_id %}
-                                    <named-content content-type="funder-id">{{ funder.fundref_id }}</named-content>
-                                {% endif %}
-                            </funding-source>
-                            {% if funder.funding_id %}
-                                <award-id>{{ funder.funding_id }}</award-id>
-                            {% endif %}
-                            {% if forloop.counter == 1 %}
-                                {% for author in article.frozen_authors_for_jats_contribs.all %}
-                                    {% if author.is_correspondence_author and author.orcid %}
-                                        <principal-award-recipient>
-                                            <contrib-id contrib-id-type="orcid">{{ author.orcid }}</contrib-id>
-                                            <name>
-                                                <surname>{{ author.last_name }}</surname>
-                                                <given-name>{{ author.given_name }}</given-name>
-                                            </name>
-                                        </principal-award-recipient>
-                                    {% endif %}
-                                {% endfor %}
-                            {% endif %}
-                        </award-group>
-                    {% endfor %}
-                </funding-group>
-            {% endif %}
+            {% for affiliation in affiliations %}
+            <xref ref-type="aff" rid="aff{{ forloop.parentloop.counter }}-{{ forloop.counter }}"/>
+            {% endfor %}
+        </contrib>
+        {% if author.is_corporate %}
+        <contrib contrib-type="author">
+            <collab>{{ author.corporate_name|safe }}</collab>
+        </contrib>
+        {% endif %}
 
-            {% if article.data_figure_files.all %}
-                <counts>
-                    <fig-count count="{{ article.data_figure_files.all.count }}"/>
-                </counts>
+        {% for affiliation in affiliations %}
+        <aff id="aff{{ forloop.parentloop.counter }}-{{ forloop.counter }}">
+            {% if affiliation.organization.uri %}
+            <institution-wrap>
+                <institution>{{ affiliation.organization.name|safe }}</institution>
+                {% if affiliation.organization.ror_id %}
+                <institution-id institution-id-type="ROR">
+                    {{ affiliation.organization.uri }}
+                </institution-id>
+                {% endif %}
+            </institution-wrap>
+            {% else %}
+            <institution>{{ affiliation.organization.name|safe }}</institution>
             {% endif %}
-            {% if answer_fields %}
-                <custom-meta-group>
-                    {% for field in answer_fields %}
-                        <custom-meta id="ques_{{ forloop.counter }}" specific-use="question">
-                            <meta-name>{{ field.field.name }}</meta-name>
-                            <meta-value>{{ field.answer }}</meta-value>
-                        </custom-meta>
-                    {% endfor %}
-                </custom-meta-group>
+            {% if affiliation.organization.title %}
+            <institution
+                    content-type="position">{{ affiliation.organization.title|safe }}
+            </institution>
             {% endif %}
-        </article-meta>
-    </front>
-    {% if body %}
-        <body>
-            {% if article.data_figure_files %}
-                {% for figure in article.data_figure_files.all %}
-                    <fig fig-type="color figure" specific-use="High_res_figure">
-                        <label>Figure {{ forloop.counter }}</label>
-                        <graphic xlink:href="{{ figure.name }}"/>
-                    </fig>
-                {% endfor %}
+            {% if affiliation.organization.department %}
+            <institution
+                    content-type="dept">{{ affiliation.organization.department|safe }}
+            </institution>
             {% endif %}
-
-            {% if article.supplementary_files %}
-                {% for suppFile in article.supplementary_files.all %}
-                    <supplementary-material specific-use="supplementary_file" xlink:href="{{ suppFile }}">
-                        <label>Video {{ forloop.counter }}</label>
-                    </supplementary-material>
-                {% endfor %}
+            {% for addrline in affiliation.organization.location %}
+            <addr-line content-type="addrline{{ forloop.counter }}">{{ addrline|safe }}</addr-line>
+            {% endfor %}
+            {% if affiliation.organization.country %}
+            <country specific-use="us">{{ affiliation.organization.country|safe }}</country>
             {% endif %}
-        </body>
+        </aff>
+        {% endfor %}
+        {% endwith %}
+        {% endfor %}
+    </contrib-group>
+    {% if article.has_manuscript_file %}
+    <ext-link specific-use="Manuscript" xlink:href="{{ article.pk }}.docx" xlink:title="Manuscript"/>
     {% endif %}
-</article>
+
+    {% if article.date_submitted or article.date_accepted %}
+    <history>
+        {% if article.date_submitted %}
+        <date date-type="received" iso-8601-date="{{ article.date_accepted|date:'Y-m-d' }}">
+            <day>{{ article.date_submitted|date:"d" }}</day>
+            <month>{{ article.date_submitted|date:"m" }}</month>
+            <year>{{ article.date_submitted|date:"Y" }}</year>
+        </date>
+        {% endif %}
+        {% if article.date_accepted %}
+        <date date-type="accepted" iso-8601-date="{{ article.date_accepted|date:'Y-m-d' }}">
+            <day>{{ article.date_accepted|date:"d" }}</day>
+            <month>{{ article.date_accepted|date:"m" }}</month>
+            <year>{{ article.date_accepted|date:"Y" }}</year>
+        </date>
+        {% endif %}
+    </history>
+    {% endif %}
+    <abstract>{{ article.get_clean_abstract }}</abstract>
+    {% if article.keywords %}
+    <kwd-group xml:lang="en">
+        {% for keyword in article.keywords.all %}
+        <kwd>{{ keyword.word }}</kwd>
+        {% endfor %}
+    </kwd-group>
+    {% endif %}
+    {% if article.funders.all %}
+    <funding-group>
+        {% for funder in article.funders.all %}
+        <award-group>
+            <funding-source>{{ funder.name }}
+                {% if funder.fundref_id %}
+                <named-content content-type="funder-id">{{ funder.fundref_id }}</named-content>
+                {% endif %}
+            </funding-source>
+            {% if funder.funding_id %}
+            <award-id>{{ funder.funding_id }}</award-id>
+            {% endif %}
+            {% if forloop.counter == 1 %}
+            {% for author in article.frozen_authors_for_jats_contribs.all %}
+            {% if author.is_correspondence_author and author.orcid %}
+            <principal-award-recipient>
+                <contrib-id contrib-id-type="orcid">{{ author.orcid }}</contrib-id>
+                <name>
+                    <surname>{{ author.last_name|safe }}</surname>
+                    <given-names>{{ author.given_names|safe }}</given-names>
+                </name>
+            </principal-award-recipient>
+            {% endif %}
+            {% endfor %}
+            {% endif %}
+        </award-group>
+        {% endfor %}
+    </funding-group>
+    {% endif %}
+
+    {% if article.data_figure_files.all %}
+    <counts>
+        <fig-count count="{{ article.data_figure_files.all.count }}"/>
+    </counts>
+    {% endif %}
+    {% if answer_fields %}
+    <custom-meta-group>
+        {% for field in answer_fields.all %}
+        <custom-meta id="ques_{{ forloop.counter }}" specific-use="question">
+            <meta-name>{{ field.field.name|safe }}</meta-name>
+            <meta-value>{{ field.answer|safe }}</meta-value>
+        </custom-meta>
+        {% endfor %}
+    </custom-meta-group>
+    {% endif %}
+</article-meta>
+        </front>
+        {% if body %}
+<body>
+    {% if article.data_figure_files %}
+    {% for figure in article.data_figure_files.all %}
+    <fig fig-type="color figure" specific-use="High_res_figure">
+        <label>Figure {{ forloop.counter }}</label>
+        <graphic xlink:href="{{ figure.name }}"/>
+    </fig>
+    {% endfor %}
+    {% endif %}
+
+    {% if article.supplementary_files %}
+    {% for suppFile in article.supplementary_files.all %}
+    <supplementary-material specific-use="supplementary_file" xlink:href="{{ suppFile }}">
+        <label>Video {{ forloop.counter }}</label>
+    </supplementary-material>
+    {% endfor %}
+    {% endif %}
+</body>
+        {% endif %}
+        </article>

@@ -3,10 +3,11 @@ __license__ = "AGPL v3"
 __maintainer__ = "The Public Library of Science (PLOS)"
 
 import os
+import shutil
 import xml.etree.ElementTree as ElementTree
 from unittest.mock import patch
 
-from hypothesis import given, settings
+from hypothesis import given, settings, HealthCheck
 from hypothesis.extra.django import TestCase
 
 import plugins.editorial_manager_transfer_service.consts as consts
@@ -47,10 +48,9 @@ class TestFileCreation(TestCase):
         """
         Tears down after each test to ensure each test is unique.
         """
-        # shutil.rmtree(article_utils._get_article_export_folders())
-        pass
+        shutil.rmtree(article_utils._get_article_export_folders())
 
-    @settings(max_examples=1, derandomize=True)
+    @settings(max_examples=1, derandomize=True, suppress_health_check=[HealthCheck.large_base_example])
     @given(article=article_utils.create_article())
     @patch('plugins.editorial_manager_transfer_service.file_exporter.get_article_export_folders',
            new=article_utils._get_article_export_folders)

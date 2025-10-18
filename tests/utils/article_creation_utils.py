@@ -18,14 +18,15 @@ from core import (
     files as core_files,
 )
 from core import settings
-from core.models import File, Account, Setting, SettingGroup, setting_types, SettingValue
+from core.models import File, Account, Setting, SettingGroup, setting_types, SettingValue, ControlledAffiliation
 from journal.models import Journal
 from plugins.editorial_manager_transfer_service import consts
-from submission.models import Article, Field, FieldAnswer
+from submission.models import Article, Field, FieldAnswer, FrozenAuthor
 
 uuid4_regex = re.compile('^([a-z0-9]{8}(-[a-z0-9]{4}){3}-[a-z0-9]{12})$')
 valid_filename_regex = re.compile("^[\w\-. ]+$")
 journal_code_regex = re.compile('^([a-z0-9]{1,40})$')
+UNACCEPTABLE_CHARACTER_CATEGORIES = ["Cn", "Co", "Cf", "Cs", "Cc", "So", "Ss", "Sk", "Sm"]
 
 EXPORT_FOLDER = os.path.join(settings.BASE_DIR, "collected-static", consts.SHORT_NAME, "export")
 
@@ -118,7 +119,7 @@ def create_journal(draw) -> Journal:
     :param draw: The Hypothesis object provided by the hypothesis framework.
     :return: The newly created journal.
     """
-    code: str = draw(st.from_regex(journal_code_regex))
+    code: str = draw(st.text(alphabet=characters(codec="latin-1"), min_size=1, max_size=40))
     code = code.strip()
     name = draw(st.text(min_size=1))
     journal: Journal = Journal.objects.create(code=code)
@@ -174,24 +175,61 @@ def create_unique_email(draw) -> str | None:
 
 
 @st.composite
+def create_affiliation(draw, account: Account, is_primary: bool = False) -> ControlledAffiliation:
+    title = draw(st.text(min_size=0), max_size=300)
+    department = draw(st.text(min_size=0), max_size=300)
+
+    start = draw(st.datetimes(allow_imaginary=False))
+    end = None
+    if not is_primary:
+        should_end = draw(st.booleans())
+        if should_end:
+            end = draw(st.datetimes(allow_imaginary=False, max_value=start))
+
+    return ControlledAffiliation.objects.create(account=account,
+                                                is_primary=is_primary,
+                                                start=start,
+                                                end=end,
+                                                title=title,
+                                                department=department, )
+
+
+@st.composite
 def create_account(draw) -> Account:
     """
     Creates a new account object from the given settings.
     :param draw: A Hypothesis object provided by the hypothesis framework.
     :return: A newly created account.
     """
-    username = draw(create_username())
-    while not username:
-        username = draw(create_username())
-
     email = draw(create_unique_email())
     while not email:
         email = draw(create_unique_email())
 
-    return Account.objects.create(
+    first_name = draw(
+        st.text(alphabet=st.characters(blacklist_categories=["C", "S"], blacklist_characters=['&']), min_size=1,
+                max_size=300))
+    middle_name = draw(
+        st.text(alphabet=st.characters(blacklist_categories=["C", "S"], blacklist_characters=['&']), min_size=0,
+                max_size=300))
+    last_name = draw(
+        st.text(alphabet=st.characters(blacklist_categories=["C", "S"], blacklist_characters=['&']), min_size=1,
+                max_size=300))
+
+    account = Account.objects.create(
             email=email,
-            username=username,
+            username=email.lower(),
+            first_name=first_name,
+            middle_name=middle_name,
+            last_name=last_name,
     )
+
+    # Make some affiliations
+    create_affiliation(account, is_primary=True)
+    other_affiliations: int = draw(st.integers(min_value=0, max_value=5))
+    for other_affiliation in range(other_affiliations):
+        create_affiliation(account, is_primary=False)
+
+    return account
 
 
 @st.composite
@@ -214,9 +252,27 @@ def create_txt_file(draw, article: Article) -> File:
 
 
 @st.composite
+def create_frozen_author(draw, article: Article) -> FrozenAuthor:
+    author = draw(create_account())
+    return FrozenAuthor.objects.create(article=article,
+                                       author=author,
+                                       first_name=author.first_name,
+                                       middle_name=author.middle_name,
+                                       last_name=author.last_name,
+                                       frozen_email=author.email,
+                                       display_email=True)
+
+
+@st.composite
 def create_article(draw) -> Article:
+    title = draw(st.text(min_size=1, max_size=999))
+    subtitle = draw(st.text(min_size=1, max_size=999))
+    abstract = draw(st.text(min_size=1))
     journal: Journal = draw(create_journal())
     article: Article = Article.objects.create(
+            title=title,
+            subtitle=subtitle,
+            abstract=abstract,
             journal=journal,
     )
 
@@ -224,15 +280,25 @@ def create_article(draw) -> Article:
     article.manuscript_files.add(manuscript)
 
     # Handle the data figure files.
-    number_of_files: int = draw(st.integers(min_value=0, max_value=20))
+    number_of_files: int = draw(st.integers(min_value=0, max_value=5))
     for i in range(number_of_files):
         data_figure: File = draw(create_txt_file(article=article))
         article.data_figure_files.add(data_figure)
 
-    number_of_answers: int = draw(st.integers(min_value=0, max_value=20))
+    # Add correspondence author.
+    frozen_correspondence_author: FrozenAuthor = draw(create_frozen_author(article=article))
+    article.correspondence_author = frozen_correspondence_author.author
+
+    article.save()
+
+    number_of_answers: int = draw(st.integers(min_value=0, max_value=5))
     for i in range(number_of_answers):
         draw(create_answer_field(article=article))
 
-    article.save()
+    number_of_authors: int = draw(st.integers(min_value=0, max_value=5))
+    for i in range(number_of_authors):
+        frozen_correspondence_author: FrozenAuthor = draw(create_frozen_author(article=article))
+        frozen_correspondence_author.associate_with_account()
+        frozen_correspondence_author.save()
 
     return article
