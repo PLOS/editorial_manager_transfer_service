@@ -11,21 +11,21 @@ from django.conf import settings as django_settings
 from django.core.files import File as DjangoFile
 from hypothesis import strategies as st
 from hypothesis.extra.django import from_field
+from hypothesis.strategies import characters
 
 from core import (
     models as core_models,
     files as core_files,
 )
 from core import settings
-from core.models import File, Account
-from hypothesis.strategies import characters
+from core.models import File, Account, Setting, SettingGroup, setting_types, SettingValue
 from journal.models import Journal
 from plugins.editorial_manager_transfer_service import consts
 from submission.models import Article, Field, FieldAnswer
 
 uuid4_regex = re.compile('^([a-z0-9]{8}(-[a-z0-9]{4}){3}-[a-z0-9]{12})$')
 valid_filename_regex = re.compile("^[\w\-. ]+$")
-journal_code_regex = re.compile('^[a-z0-9]{1,40}$')
+journal_code_regex = re.compile('^([a-z0-9]{1,40})$')
 
 EXPORT_FOLDER = os.path.join(settings.BASE_DIR, "collected-static", consts.SHORT_NAME, "export")
 
@@ -76,6 +76,41 @@ def database_crafter_create_default_xsl() -> None:
         core_models.XSLFile.objects.create(label=django_settings.DEFAULT_XSL_FILE_LABEL)
 
 
+def create_group_setting(group_name: str) -> SettingGroup:
+    setting, created = SettingGroup.objects.get_or_create(name=group_name)
+    return setting
+
+
+@st.composite
+def create_setting(draw, group_name: str, setting_name: str) -> Setting:
+    setting_group: SettingGroup = create_group_setting(group_name=group_name)
+    setting, created = Setting.objects.get_or_create(name=setting_name, group=setting_group)
+    if created:
+        pretty_name = draw(st.text(min_size=1))
+        description = draw(st.text(min_size=1))
+        is_translatable = draw(st.booleans())
+        setting_type = draw(st.sampled_from(setting_types))
+        setting.defaults = {
+            "pretty_name": pretty_name,
+            "description": description,
+            "is_translatable": is_translatable,
+            "type": setting_type,
+        }
+        setting.save()
+
+    return setting
+
+
+@st.composite
+def create_setting_value(draw, journal: Journal, group_name: str, setting_name: str, setting_value) -> SettingValue:
+    setting = draw(create_setting(group_name=group_name, setting_name=setting_name))
+    value = SettingValue.objects.filter(setting=setting, journal=journal).first()
+    if not value:
+        SettingValue.objects.create(setting=setting, journal=journal, value=setting_value)
+
+    return value
+
+
 @st.composite
 def create_journal(draw) -> Journal:
     """
@@ -83,9 +118,14 @@ def create_journal(draw) -> Journal:
     :param draw: The Hypothesis object provided by the hypothesis framework.
     :return: The newly created journal.
     """
-    code = draw(st.from_regex(journal_code_regex))
+    code: str = draw(st.from_regex(journal_code_regex))
+    code = code.strip()
+    name = draw(st.text(min_size=1))
     journal: Journal = Journal.objects.create(code=code)
+
+    draw(create_setting_value(journal=journal, group_name="general", setting_name="journal_name", setting_value=name))
     return journal
+
 
 @st.composite
 def create_field(draw, journal: Journal) -> Field:
@@ -94,10 +134,12 @@ def create_field(draw, journal: Journal) -> Field:
     field: Field = Field.objects.create(name=name, journal=journal, order=order)
     return field
 
+
 @st.composite
 def create_answer_field(draw, article: Article) -> FieldAnswer:
     answer = draw(st.text(alphabet=characters(codec='utf-8'), min_size=1, max_size=40))
-    field: FieldAnswer = FieldAnswer.objects.create(field=draw(create_field(article.journal)), answer=answer, article=article)
+    field: FieldAnswer = FieldAnswer.objects.create(field=draw(create_field(article.journal)), answer=answer,
+                                                    article=article)
     return field
 
 
@@ -166,7 +208,7 @@ def create_txt_file(draw, article: Article) -> File:
         except FileExistsError:
             pass
     with open(manuscript_filepath, 'rb+') as file:
-        django_file = DjangoFile(file, name=filename)
+        django_file = DjangoFile(file, name=f"{filename}.txt")
         return core_files.save_file_to_article(file_to_handle=django_file, article=article,
                                                owner=draw(create_account()))
 

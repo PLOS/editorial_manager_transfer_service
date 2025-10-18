@@ -8,9 +8,10 @@ __maintainer__ = "The Public Library of Science (PLOS)"
 import os
 import uuid
 import xml.etree.cElementTree as ETree
-import zipfile
 from collections.abc import Sequence
 from typing import List
+
+from janeway_ftp import helpers as deposit_helpers
 
 import plugins.editorial_manager_transfer_service.consts as consts
 import plugins.editorial_manager_transfer_service.logger_messages as logger_messages
@@ -20,10 +21,12 @@ from plugins.editorial_manager_transfer_service.enums.report_state import Report
 from plugins.editorial_manager_transfer_service.enums.transfer_log_message_type import TransferLogMessageType
 from plugins.editorial_manager_transfer_service.models import TransferLogs
 from plugins.editorial_manager_transfer_service.utils.jats import get_xml_license_code, generate_jats_metadata
+from plugins.editorial_manager_transfer_service.utils.settings import get_license_code, get_submission_partner_code, \
+    get_journal_code
 from plugins.editorial_manager_transfer_service.utils.transfer_report import get_or_create_transfer_report, \
     resolve_transfer_report
 from plugins.production_transporter.utilities import data_fetch
-from plugins.editorial_manager_transfer_service.utils.settings import get_license_code, get_submission_partner_code, get_journal_code
+from plugins.production_transporter.utilities.file_utils import copy_files_to_temp_deposit_folder
 from submission.models import Article
 from utils.logger import get_logger
 
@@ -59,6 +62,7 @@ class ExportFileCreation:
         self.journal: Journal | None = None
         self.export_folder: str | None = None
         self.xml_filepath: str | None = None
+        self.__temp_folder: str | None = None
 
         # Gets the journal
         self.journal: Journal | None = self.__fetch_journal(janeway_journal_code)
@@ -115,9 +119,14 @@ class ExportFileCreation:
             self.in_error_state = True
             return
 
+        prefix: str = "{0}_{1}".format(self.get_submission_partner_code(), uuid.uuid4())
+
+        self.zip_filepath: str = os.path.join(self.export_folder, "{0}.zip".format(prefix))
+        self.__temp_folder = os.path.join(self.export_folder, "{0}".format(prefix))
+        os.makedirs(self.__temp_folder, exist_ok=True)
+
         # Attempt to get the metadata file.
         if self.__get_xml_filepath() is None:
-            print("The export file is not exported.")
             logger.error(logger_messages.process_failed_fetching_metadata(self.article_id))
             self.in_error_state = True
             return
@@ -129,15 +138,15 @@ class ExportFileCreation:
             self.in_error_state = True
             return
 
-        prefix: str = "{0}_{1}".format(self.get_submission_partner_code(), uuid.uuid4())
+        filenames: List[str] = []
 
-        self.zip_filepath: str = os.path.join(self.export_folder, "{0}.zip".format(prefix))
-        with zipfile.ZipFile(self.zip_filepath, "w") as zipf:
-            zipf.write(self.__get_xml_filepath())
-            for article_file in article_files:
-                zipf.write(article_file.get_file_path(self.article))
-            filenames: Sequence[str] = zipf.namelist()
-            zipf.close()
+        # Move files to temp folder.
+        for article_file in article_files:
+            filepath: str = article_file.get_file_path(self.article)
+            copy_files_to_temp_deposit_folder(filepath, self.__temp_folder)
+            filenames.append(os.path.basename(filepath))
+
+        deposit_helpers.zip_temp_folder(temp_folder=self.__temp_folder)
 
         # Remove the manuscript
         self.__create_go_xml_file(os.path.basename(self.__get_xml_filepath()), filenames, prefix)
@@ -235,10 +244,13 @@ class ExportFileCreation:
         :return:The filepath to the JATS XML file.
         """
         if not self.xml_filepath:
-            self.xml_filepath = generate_jats_metadata(self.journal, self.article, self.export_folder)
-            if not self.xml_filepath:
-                print("Failed to generate XML file.")
+            filepath = generate_jats_metadata(self.journal, self.article, self.__temp_folder)
+
+            if not filepath:
                 self.in_error_state = True
+                return None
+
+            self.xml_filepath = f"{filepath}.xml"
         return self.xml_filepath
 
     def __fetch_article(self, journal: Journal | None, article_id: int | None) -> Article | None:
