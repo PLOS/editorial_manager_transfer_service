@@ -74,8 +74,6 @@ class TestMetadataCreation(TestCase):
         except etree.ParseError:
             self.fail(f"Metadata {jats_filepath} could not be parsed")
 
-        authors = article.frozen_authors_for_jats_contribs()
-
         root = tree.getroot()
         self.assertIsNotNone(root)
         self.assertEqual("article", root.tag)

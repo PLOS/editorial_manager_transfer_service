@@ -18,7 +18,8 @@ from core import (
     files as core_files,
 )
 from core import settings
-from core.models import File, Account, Setting, SettingGroup, setting_types, SettingValue, ControlledAffiliation
+from core.models import File, Account, Setting, SettingGroup, setting_types, SettingValue, ControlledAffiliation, \
+    Organization, OrganizationName, Location, Country, Role
 from journal.models import Journal
 from plugins.editorial_manager_transfer_service import consts
 from submission.models import Article, Field, FieldAnswer, FrozenAuthor
@@ -26,7 +27,7 @@ from submission.models import Article, Field, FieldAnswer, FrozenAuthor
 uuid4_regex = re.compile('^([a-z0-9]{8}(-[a-z0-9]{4}){3}-[a-z0-9]{12})$')
 valid_filename_regex = re.compile("^[\w\-. ]+$")
 journal_code_regex = re.compile('^([a-z0-9]{1,40})$')
-UNACCEPTABLE_CHARACTER_CATEGORIES = ["Cn", "Co", "Cf", "Cs", "Cc", "So", "Ss", "Sk", "Sm"]
+UNACCEPTABLE_CHARACTER_CATEGORIES = st.characters(blacklist_categories=["C", "S"], blacklist_characters=['&'])
 
 EXPORT_FOLDER = os.path.join(settings.BASE_DIR, "collected-static", consts.SHORT_NAME, "export")
 
@@ -46,6 +47,10 @@ def database_crafter_do_preqs() -> None:
     """
     create_default_settings()
     database_crafter_create_default_xsl()
+    create_default_roles()
+
+def create_default_roles() -> None:
+    Role.objects.create(slug="author")
 
 
 def create_default_settings() -> None:
@@ -87,8 +92,8 @@ def create_setting(draw, group_name: str, setting_name: str) -> Setting:
     setting_group: SettingGroup = create_group_setting(group_name=group_name)
     setting, created = Setting.objects.get_or_create(name=setting_name, group=setting_group)
     if created:
-        pretty_name = draw(st.text(min_size=1))
-        description = draw(st.text(min_size=1))
+        pretty_name = draw(st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1))
+        description = draw(st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1))
         is_translatable = draw(st.booleans())
         setting_type = draw(st.sampled_from(setting_types))
         setting.defaults = {
@@ -119,9 +124,18 @@ def create_journal(draw) -> Journal:
     :param draw: The Hypothesis object provided by the hypothesis framework.
     :return: The newly created journal.
     """
-    code: str = draw(st.text(alphabet=characters(codec="latin-1"), min_size=1, max_size=40))
+
+    # Decide if we want to create a new journal or not.
+    journal_count: int = Journal.objects.count()
+    if journal_count > 0:
+        rando = draw(st.integers(min_value=1, max_value=100))
+        if rando <= 75:
+            draw_journal: int = draw(st.integers(min_value=0, max_value=journal_count))
+            return Journal.objects.all().order_by("id")[draw_journal]
+
+    code: str = draw(st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=40))
     code = code.strip()
-    name = draw(st.text(min_size=1))
+    name = draw(st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1))
     journal: Journal = Journal.objects.create(code=code)
 
     draw(create_setting_value(journal=journal, group_name="general", setting_name="journal_name", setting_value=name))
@@ -130,7 +144,7 @@ def create_journal(draw) -> Journal:
 
 @st.composite
 def create_field(draw, journal: Journal) -> Field:
-    name = draw(st.text(alphabet=characters(codec='utf-8'), min_size=1, max_size=40))
+    name = draw(st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=40))
     order = 0
     field: Field = Field.objects.create(name=name, journal=journal, order=order)
     return field
@@ -138,25 +152,10 @@ def create_field(draw, journal: Journal) -> Field:
 
 @st.composite
 def create_answer_field(draw, article: Article) -> FieldAnswer:
-    answer = draw(st.text(alphabet=characters(codec='utf-8'), min_size=1, max_size=40))
+    answer = draw(st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=40))
     field: FieldAnswer = FieldAnswer.objects.create(field=draw(create_field(article.journal)), answer=answer,
                                                     article=article)
     return field
-
-
-@st.composite
-def create_username(draw) -> str | None:
-    """
-    Creates a unique username or None, if the username created was not unique.
-    :param draw: The Hypothesis object provided by the hypothesis framework.
-    :return: A unique username or None, if the username created was not unique.
-    """
-    username = draw(from_field(Account._meta.get_field('username')))
-    try:
-        Account.objects.get(username=username)
-        return None
-    except Account.DoesNotExist:
-        return username
 
 
 @st.composite
@@ -173,11 +172,65 @@ def create_unique_email(draw) -> str | None:
     except Account.DoesNotExist:
         return email
 
+@st.composite
+def create_country(draw) -> Country:
+    # Decide if we want to create a new field or not.
+    obj_count: int = Country.objects.count()
+    if obj_count > 0:
+        rando = draw(st.integers(min_value=1, max_value=100))
+        if rando <= 75:
+            draw_obj: int = draw(st.integers(min_value=0, max_value=obj_count))
+            return Country.objects.all().order_by("id")[draw_obj]
+
+    code = draw(st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=5))
+    name = draw(st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=255))
+    return Country.objects.create(code=code, name=name)
 
 @st.composite
-def create_affiliation(draw, account: Account, is_primary: bool = False) -> ControlledAffiliation:
-    title = draw(st.text(min_size=0), max_size=300)
-    department = draw(st.text(min_size=0), max_size=300)
+def create_location(draw) -> Location:
+    # Decide if we want to create a new location or not.
+    obj_count: int = Location.objects.count()
+    if obj_count > 0:
+        rando = draw(st.integers(min_value=1, max_value=100))
+        if rando <= 75:
+            draw_obj: int = draw(st.integers(min_value=0, max_value=obj_count))
+            return Location.objects.all().order_by("id")[draw_obj]
+
+    city_name = draw(st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=200))
+    country = draw(create_country())
+    return Location.objects.create(name=city_name, country=country)
+
+
+@st.composite
+def create_organization_name(draw, organization: Organization) -> OrganizationName:
+    value = draw(st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=1000))
+
+    return OrganizationName.objects.create(value=value,
+                                           ror_display_for=organization,
+                                           label_for=organization,)
+
+@st.composite
+def create_organization(draw) -> Organization:
+    # Decide if we want to create a new location or not.
+    obj_count: int = Organization.objects.count()
+    if obj_count > 0:
+        rando = draw(st.integers(min_value=1, max_value=100))
+        if rando <= 75:
+            draw_obj: int = draw(st.integers(min_value=0, max_value=obj_count))
+            return Organization.objects.all().order_by("id")[draw_obj]
+
+    organization = Organization.objects.create()
+    draw(create_organization(organization=organization))
+    location = draw(create_location())
+    organization.locations.add(location)
+    organization.save()
+    return organization
+
+
+@st.composite
+def create_controlled_affiliation(draw, account: Account, is_primary: bool = False) -> ControlledAffiliation:
+    title = draw(st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=0, max_size=300))
+    department = draw(st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=0, max_size=300))
 
     start = draw(st.datetimes(allow_imaginary=False))
     end = None
@@ -186,7 +239,10 @@ def create_affiliation(draw, account: Account, is_primary: bool = False) -> Cont
         if should_end:
             end = draw(st.datetimes(allow_imaginary=False, max_value=start))
 
+    organization = draw(create_organization())
+
     return ControlledAffiliation.objects.create(account=account,
+                                                organization=organization,
                                                 is_primary=is_primary,
                                                 start=start,
                                                 end=end,
@@ -206,13 +262,13 @@ def create_account(draw) -> Account:
         email = draw(create_unique_email())
 
     first_name = draw(
-        st.text(alphabet=st.characters(blacklist_categories=["C", "S"], blacklist_characters=['&']), min_size=1,
+        st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1,
                 max_size=300))
     middle_name = draw(
-        st.text(alphabet=st.characters(blacklist_categories=["C", "S"], blacklist_characters=['&']), min_size=0,
+        st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=0,
                 max_size=300))
     last_name = draw(
-        st.text(alphabet=st.characters(blacklist_categories=["C", "S"], blacklist_characters=['&']), min_size=1,
+        st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1,
                 max_size=300))
 
     account = Account.objects.create(
@@ -224,10 +280,10 @@ def create_account(draw) -> Account:
     )
 
     # Make some affiliations
-    create_affiliation(account, is_primary=True)
+    create_controlled_affiliation(account, is_primary=True)
     other_affiliations: int = draw(st.integers(min_value=0, max_value=5))
     for other_affiliation in range(other_affiliations):
-        create_affiliation(account, is_primary=False)
+        create_controlled_affiliation(account, is_primary=False)
 
     return account
 
@@ -254,20 +310,14 @@ def create_txt_file(draw, article: Article) -> File:
 @st.composite
 def create_frozen_author(draw, article: Article) -> FrozenAuthor:
     author = draw(create_account())
-    return FrozenAuthor.objects.create(article=article,
-                                       author=author,
-                                       first_name=author.first_name,
-                                       middle_name=author.middle_name,
-                                       last_name=author.last_name,
-                                       frozen_email=author.email,
-                                       display_email=True)
+    return author.snapshot_as_author(article)
 
 
 @st.composite
 def create_article(draw) -> Article:
-    title = draw(st.text(min_size=1, max_size=999))
-    subtitle = draw(st.text(min_size=1, max_size=999))
-    abstract = draw(st.text(min_size=1))
+    title = draw(st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=999))
+    subtitle = draw(st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=999))
+    abstract = draw(st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1))
     journal: Journal = draw(create_journal())
     article: Article = Article.objects.create(
             title=title,
