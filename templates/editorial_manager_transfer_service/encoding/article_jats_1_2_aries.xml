@@ -91,7 +91,7 @@
                     content-type="dept">{{ affiliation.organization.department|safe }}
             </institution>
             {% endif %}
-            {% for addrline in affiliation.organization.location %}
+            {% for addrline in affiliation.organization.locations.all %}
             <addr-line content-type="addrline{{ forloop.counter }}">{{ addrline|safe }}</addr-line>
             {% endfor %}
             {% if affiliation.organization.country %}

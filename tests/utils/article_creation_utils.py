@@ -129,8 +129,8 @@ def create_journal(draw) -> Journal:
     if journal_count > 0:
         rando = draw(st.integers(min_value=1, max_value=100))
         if rando <= 75:
-            draw_journal: int = draw(st.integers(min_value=0, max_value=journal_count))
-            return Journal.objects.all().order_by("id")[draw_journal]
+            obj_loc = draw(st.integers(min_value=0, max_value=journal_count - 1))
+            return Journal.objects.all().order_by("id")[obj_loc]
 
     code: str = draw(st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=40))
     code = code.strip()
@@ -179,8 +179,8 @@ def create_country(draw) -> Country:
     if obj_count > 0:
         rando = draw(st.integers(min_value=1, max_value=100))
         if rando <= 75:
-            draw_obj: int = draw(st.integers(min_value=0, max_value=obj_count))
-            return Country.objects.all().order_by("id")[draw_obj]
+            obj_loc = draw(st.integers(min_value=0, max_value=obj_count-1))
+            return Country.objects.all().order_by("id")[obj_loc]
 
     code = draw(st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=5))
     name = draw(st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=255))
@@ -194,8 +194,8 @@ def create_location(draw) -> Location:
     if obj_count > 0:
         rando = draw(st.integers(min_value=1, max_value=100))
         if rando <= 75:
-            draw_obj: int = draw(st.integers(min_value=0, max_value=obj_count))
-            return Location.objects.all().order_by("id")[draw_obj]
+            obj_loc = draw(st.integers(min_value=0, max_value=obj_count-1))
+            return Location.objects.all().order_by("id")[obj_loc]
 
     city_name = draw(st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=200))
     country = draw(create_country())
@@ -218,11 +218,11 @@ def create_organization(draw) -> Organization:
     if obj_count > 0:
         rando = draw(st.integers(min_value=1, max_value=100))
         if rando <= 75:
-            draw_obj: int = draw(st.integers(min_value=0, max_value=obj_count))
-            return Organization.objects.all().order_by("id")[draw_obj]
+            obj_loc = draw(st.integers(min_value=0, max_value=obj_count - 1))
+            return Organization.objects.all().order_by("id")[obj_loc]
 
     organization = Organization.objects.create()
-    draw(create_organization(organization=organization))
+    draw(create_organization_name(organization))
     location = draw(create_location())
     organization.locations.add(location)
     organization.save()
@@ -244,12 +244,12 @@ def create_controlled_affiliation(draw, account: Account, is_primary: bool = Fal
     organization = draw(create_organization())
 
     return ControlledAffiliation.objects.create(account=account,
-                                                organization=organization,
-                                                is_primary=is_primary,
-                                                start=start,
-                                                end=end,
-                                                title=title,
-                                                department=department, )
+                                                                  organization=organization,
+                                                                  is_primary=is_primary,
+                                                                  start=start,
+                                                                  end=end,
+                                                                  title=title,
+                                                                  department=department, )
 
 
 @st.composite
@@ -259,6 +259,7 @@ def create_account(draw) -> Account:
     :param draw: A Hypothesis object provided by the hypothesis framework.
     :return: A newly created account.
     """
+
     email = draw(create_unique_email())
     while not email:
         email = draw(create_unique_email())
@@ -282,10 +283,10 @@ def create_account(draw) -> Account:
     )
 
     # Make some affiliations
-    create_controlled_affiliation(account, is_primary=True)
+    draw(create_controlled_affiliation(account, is_primary=True))
     other_affiliations: int = draw(st.integers(min_value=0, max_value=5))
     for other_affiliation in range(other_affiliations):
-        create_controlled_affiliation(account, is_primary=False)
+        draw(create_controlled_affiliation(account, is_primary=False))
 
     return account
 
