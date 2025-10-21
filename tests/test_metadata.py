@@ -3,15 +3,13 @@ __license__ = "AGPL v3"
 __maintainer__ = "The Public Library of Science (PLOS)"
 
 import os
-from lxml import etree
 from unittest.mock import patch
 
 from hypothesis import given, settings, HealthCheck
 from hypothesis.extra.django import TestCase
+from lxml import etree
 from lxml.etree import ElementTree
 
-import plugins.editorial_manager_transfer_service.consts as consts
-import plugins.editorial_manager_transfer_service.file_exporter as file_exporter
 import plugins.editorial_manager_transfer_service.tests.utils.article_creation_utils as article_utils
 from plugins.editorial_manager_transfer_service.utils.jats import generate_jats_metadata
 from submission.models import Article
@@ -54,7 +52,8 @@ class TestMetadataCreation(TestCase):
 
     @settings(max_examples=1, derandomize=True, suppress_health_check=[HealthCheck.large_base_example])
     @given(article=article_utils.create_article())
-    @patch("plugins.editorial_manager_transfer_service.utils.settings.get_submission_partner_code", new=_get_submission_partner_code)
+    @patch("plugins.editorial_manager_transfer_service.utils.settings.get_submission_partner_code",
+           new=_get_submission_partner_code)
     @patch('plugins.editorial_manager_transfer_service.utils.settings.get_license_code', new=_get_license_code)
     @patch('plugins.editorial_manager_transfer_service.utils.settings.get_journal_code', new=_get_journal_code)
     def test_regular_metadata(self, article: Article) -> None:

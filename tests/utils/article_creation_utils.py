@@ -10,8 +10,6 @@ import re
 from django.conf import settings as django_settings
 from django.core.files import File as DjangoFile
 from hypothesis import strategies as st
-from hypothesis.extra.django import from_field
-from hypothesis.strategies import characters
 
 from core import (
     models as core_models,
@@ -48,6 +46,7 @@ def database_crafter_do_preqs() -> None:
     create_default_settings()
     database_crafter_create_default_xsl()
     create_default_roles()
+
 
 def create_default_roles() -> None:
     Role.objects.create(slug="author")
@@ -172,6 +171,7 @@ def create_unique_email(draw) -> str | None:
     except Account.DoesNotExist:
         return email
 
+
 @st.composite
 def create_country(draw) -> Country:
     # Decide if we want to create a new field or not.
@@ -185,6 +185,7 @@ def create_country(draw) -> Country:
     code = draw(st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=5))
     name = draw(st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=255))
     return Country.objects.create(code=code, name=name)
+
 
 @st.composite
 def create_location(draw) -> Location:
@@ -207,7 +208,8 @@ def create_organization_name(draw, organization: Organization) -> OrganizationNa
 
     return OrganizationName.objects.create(value=value,
                                            ror_display_for=organization,
-                                           label_for=organization,)
+                                           label_for=organization, )
+
 
 @st.composite
 def create_organization(draw) -> Organization:
@@ -262,14 +264,14 @@ def create_account(draw) -> Account:
         email = draw(create_unique_email())
 
     first_name = draw(
-        st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1,
-                max_size=300))
+            st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1,
+                    max_size=300))
     middle_name = draw(
-        st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=0,
-                max_size=300))
+            st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=0,
+                    max_size=300))
     last_name = draw(
-        st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1,
-                max_size=300))
+            st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1,
+                    max_size=300))
 
     account = Account.objects.create(
             email=email,
