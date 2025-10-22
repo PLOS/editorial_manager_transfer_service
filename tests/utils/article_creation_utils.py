@@ -9,6 +9,7 @@ import re
 
 from django.conf import settings as django_settings
 from django.core.files import File as DjangoFile
+from django.db.models import Model
 from hypothesis import strategies as st
 
 from core import (
@@ -16,18 +17,18 @@ from core import (
     files as core_files,
 )
 from core import settings
+from core.model_utils import AbstractSiteModel
 from core.models import File, Account, Setting, SettingGroup, setting_types, SettingValue, ControlledAffiliation, \
     Organization, OrganizationName, Location, Country, Role
 from journal.models import Journal
 from plugins.editorial_manager_transfer_service import consts
 from submission.models import Article, Field, FieldAnswer, FrozenAuthor
 
+ACCEPTABLE_CHARACTER_CATEGORIES = st.characters(blacklist_categories=["C", "S"], blacklist_characters=['&'])
+EXPORT_FOLDER = os.path.join(settings.BASE_DIR, "collected-static", consts.SHORT_NAME, "export")
+
 uuid4_regex = re.compile('^([a-z0-9]{8}(-[a-z0-9]{4}){3}-[a-z0-9]{12})$')
 valid_filename_regex = re.compile("^[\w\-. ]+$")
-journal_code_regex = re.compile('^([a-z0-9]{1,40})$')
-UNACCEPTABLE_CHARACTER_CATEGORIES = st.characters(blacklist_categories=["C", "S"], blacklist_characters=['&'])
-
-EXPORT_FOLDER = os.path.join(settings.BASE_DIR, "collected-static", consts.SHORT_NAME, "export")
 
 
 def _get_article_export_folders() -> str:
@@ -85,14 +86,30 @@ def create_group_setting(group_name: str) -> SettingGroup:
     setting, created = SettingGroup.objects.get_or_create(name=group_name)
     return setting
 
+@st.composite
+def get_random_index(draw, obj_count: int) -> int | None:
+    """
+    Generates a random index for the given model.
+    :param draw: The search strategy for the composite.
+    :param obj_count: The number of objects which exist for the model.
+    :return: A random index or None, if a random index should not be used.
+    """
+
+    # Decide if we want to create a new object or not
+    if obj_count > 0:
+        rando = draw(st.integers(min_value=1, max_value=100))
+        if rando <= 75:
+            return draw(st.integers(min_value=0, max_value=obj_count - 1))
+
+    return None
 
 @st.composite
 def create_setting(draw, group_name: str, setting_name: str) -> Setting:
     setting_group: SettingGroup = create_group_setting(group_name=group_name)
     setting, created = Setting.objects.get_or_create(name=setting_name, group=setting_group)
     if created:
-        pretty_name = draw(st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1))
-        description = draw(st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1))
+        pretty_name = draw(st.text(alphabet=ACCEPTABLE_CHARACTER_CATEGORIES, min_size=1))
+        description = draw(st.text(alphabet=ACCEPTABLE_CHARACTER_CATEGORIES, min_size=1))
         is_translatable = draw(st.booleans())
         setting_type = draw(st.sampled_from(setting_types))
         setting.defaults = {
@@ -123,18 +140,13 @@ def create_journal(draw) -> Journal:
     :param draw: The Hypothesis object provided by the hypothesis framework.
     :return: The newly created journal.
     """
+    rand_index = draw(get_random_index(Journal.objects.count()))
+    if rand_index is not None:
+        return Journal.objects.all().order_by("id")[rand_index]
 
-    # Decide if we want to create a new journal or not.
-    journal_count: int = Journal.objects.count()
-    if journal_count > 0:
-        rando = draw(st.integers(min_value=1, max_value=100))
-        if rando <= 75:
-            obj_loc = draw(st.integers(min_value=0, max_value=journal_count - 1))
-            return Journal.objects.all().order_by("id")[obj_loc]
-
-    code: str = draw(st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=40))
+    code: str = draw(st.text(alphabet=ACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=40))
     code = code.strip()
-    name = draw(st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1))
+    name = draw(st.text(alphabet=ACCEPTABLE_CHARACTER_CATEGORIES, min_size=1))
     journal: Journal = Journal.objects.create(code=code)
 
     draw(create_setting_value(journal=journal, group_name="general", setting_name="journal_name", setting_value=name))
@@ -143,7 +155,7 @@ def create_journal(draw) -> Journal:
 
 @st.composite
 def create_field(draw, journal: Journal) -> Field:
-    name = draw(st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=40))
+    name = draw(st.text(alphabet=ACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=40))
     order = 0
     field: Field = Field.objects.create(name=name, journal=journal, order=order)
     return field
@@ -151,7 +163,7 @@ def create_field(draw, journal: Journal) -> Field:
 
 @st.composite
 def create_answer_field(draw, article: Article) -> FieldAnswer:
-    answer = draw(st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=40))
+    answer = draw(st.text(alphabet=ACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=40))
     field: FieldAnswer = FieldAnswer.objects.create(field=draw(create_field(article.journal)), answer=answer,
                                                     article=article)
     return field
@@ -174,37 +186,31 @@ def create_unique_email(draw) -> str | None:
 
 @st.composite
 def create_country(draw) -> Country:
-    # Decide if we want to create a new field or not.
-    obj_count: int = Country.objects.count()
-    if obj_count > 0:
-        rando = draw(st.integers(min_value=1, max_value=100))
-        if rando <= 75:
-            obj_loc = draw(st.integers(min_value=0, max_value=obj_count-1))
-            return Country.objects.all().order_by("id")[obj_loc]
+    # Decide if we want to create a new country or not.
+    rand_index = draw(get_random_index(Country.objects.count()))
+    if rand_index is not None:
+        return Country.objects.all().order_by("id")[rand_index]
 
-    code = draw(st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=5))
-    name = draw(st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=255))
+    code = draw(st.text(alphabet=ACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=5))
+    name = draw(st.text(alphabet=ACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=255))
     return Country.objects.create(code=code, name=name)
 
 
 @st.composite
 def create_location(draw) -> Location:
     # Decide if we want to create a new location or not.
-    obj_count: int = Location.objects.count()
-    if obj_count > 0:
-        rando = draw(st.integers(min_value=1, max_value=100))
-        if rando <= 75:
-            obj_loc = draw(st.integers(min_value=0, max_value=obj_count-1))
-            return Location.objects.all().order_by("id")[obj_loc]
+    rand_index = draw(get_random_index(Location.objects.count()))
+    if rand_index is not None:
+        return Location.objects.all().order_by("id")[rand_index]
 
-    city_name = draw(st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=200))
+    city_name = draw(st.text(alphabet=ACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=200))
     country = draw(create_country())
     return Location.objects.create(name=city_name, country=country)
 
 
 @st.composite
 def create_organization_name(draw, organization: Organization) -> OrganizationName:
-    value = draw(st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=1000))
+    value = draw(st.text(alphabet=ACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=1000))
 
     return OrganizationName.objects.create(value=value,
                                            ror_display_for=organization,
@@ -213,13 +219,10 @@ def create_organization_name(draw, organization: Organization) -> OrganizationNa
 
 @st.composite
 def create_organization(draw) -> Organization:
-    # Decide if we want to create a new location or not.
-    obj_count: int = Organization.objects.count()
-    if obj_count > 0:
-        rando = draw(st.integers(min_value=1, max_value=100))
-        if rando <= 75:
-            obj_loc = draw(st.integers(min_value=0, max_value=obj_count - 1))
-            return Organization.objects.all().order_by("id")[obj_loc]
+    # Decide if we want to create a new organization or not.
+    rand_index = draw(get_random_index(Organization.objects.count()))
+    if rand_index is not None:
+        return Organization.objects.all().order_by("id")[rand_index]
 
     organization = Organization.objects.create()
     draw(create_organization_name(organization))
@@ -231,25 +234,25 @@ def create_organization(draw) -> Organization:
 
 @st.composite
 def create_controlled_affiliation(draw, account: Account, is_primary: bool = False) -> ControlledAffiliation:
-    title = draw(st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=0, max_size=300))
-    department = draw(st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=0, max_size=300))
+    title = draw(st.text(alphabet=ACCEPTABLE_CHARACTER_CATEGORIES, min_size=0, max_size=300))
+    department = draw(st.text(alphabet=ACCEPTABLE_CHARACTER_CATEGORIES, min_size=0, max_size=300))
 
     start = draw(st.datetimes(allow_imaginary=False))
     end = None
     if not is_primary:
         should_end = draw(st.booleans())
         if should_end:
-            end = draw(st.datetimes(allow_imaginary=False, max_value=start))
+            end = draw(st.datetimes(allow_imaginary=False, min_value=start))
 
     organization = draw(create_organization())
 
     return ControlledAffiliation.objects.create(account=account,
-                                                                  organization=organization,
-                                                                  is_primary=is_primary,
-                                                                  start=start,
-                                                                  end=end,
-                                                                  title=title,
-                                                                  department=department, )
+                                                organization=organization,
+                                                is_primary=is_primary,
+                                                start=start,
+                                                end=end,
+                                                title=title,
+                                                department=department, )
 
 
 @st.composite
@@ -265,13 +268,13 @@ def create_account(draw) -> Account:
         email = draw(create_unique_email())
 
     first_name = draw(
-            st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1,
+            st.text(alphabet=ACCEPTABLE_CHARACTER_CATEGORIES, min_size=1,
                     max_size=300))
     middle_name = draw(
-            st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=0,
+            st.text(alphabet=ACCEPTABLE_CHARACTER_CATEGORIES, min_size=0,
                     max_size=300))
     last_name = draw(
-            st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1,
+            st.text(alphabet=ACCEPTABLE_CHARACTER_CATEGORIES, min_size=1,
                     max_size=300))
 
     account = Account.objects.create(
@@ -318,9 +321,14 @@ def create_frozen_author(draw, article: Article) -> FrozenAuthor:
 
 @st.composite
 def create_article(draw) -> Article:
-    title = draw(st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=999))
-    subtitle = draw(st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=999))
-    abstract = draw(st.text(alphabet=UNACCEPTABLE_CHARACTER_CATEGORIES, min_size=1))
+    """
+    Creates a new article object from the given settings.
+    :param draw: The Hypothesis object provided by the hypothesis framework.
+    :return: A randomly generated article.
+    """
+    title = draw(st.text(alphabet=ACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=999))
+    subtitle = draw(st.text(alphabet=ACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=999))
+    abstract = draw(st.text(alphabet=ACCEPTABLE_CHARACTER_CATEGORIES, min_size=1))
     journal: Journal = draw(create_journal())
     article: Article = Article.objects.create(
             title=title,
