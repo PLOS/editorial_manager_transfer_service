@@ -103,7 +103,7 @@ def create_setting(draw, group_name: str, setting_name: str) -> Setting:
         is_translatable = draw(st.booleans())
         setting_type = draw(st.sampled_from(setting_types))
         setting.defaults = {"pretty_name": pretty_name, "description": description, "is_translatable": is_translatable,
-            "type": setting_type, }
+                            "type": setting_type, }
         setting.save()
 
     return setting
@@ -143,7 +143,7 @@ def create_journal(draw) -> Journal:
 def create_field(draw, journal: Journal) -> Field:
     name = draw(st.text(alphabet=ACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=40))
     order = 0
-    slug = draw(st.from_regex(uuid4_regex))
+    slug = draw(st.from_regex(uuid4_regex)).strip()
     field: Field = Field.objects.create(name=name, slug=slug, journal=journal, order=order)
     return field
 
@@ -252,7 +252,7 @@ def create_account(draw) -> Account:
     last_name = draw(st.text(alphabet=ACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=300))
 
     account = Account.objects.create(email=email, username=email.lower(), first_name=first_name,
-            middle_name=middle_name, last_name=last_name, )
+                                     middle_name=middle_name, last_name=last_name, )
 
     # Make some affiliations
     draw(create_controlled_affiliation(account, is_primary=True))

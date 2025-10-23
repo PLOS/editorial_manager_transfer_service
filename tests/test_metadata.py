@@ -11,6 +11,7 @@ from lxml import etree
 from lxml.etree import ElementTree
 
 import plugins.editorial_manager_transfer_service.tests.utils.article_creation_utils as article_utils
+from plugins.editorial_manager_transfer_service.tests.utils.validate_jats import validate_xml
 from plugins.editorial_manager_transfer_service.utils.jats import generate_jats_metadata
 from submission.models import Article
 
@@ -50,7 +51,8 @@ class TestMetadataCreation(TestCase):
         # shutil.rmtree(article_utils._get_article_export_folders())
         pass
 
-    @settings(max_examples=1, derandomize=False, suppress_health_check=[HealthCheck.large_base_example])
+    @settings(max_examples=10, derandomize=False,
+              suppress_health_check=[HealthCheck.large_base_example, HealthCheck.too_slow])
     @given(article=article_utils.create_article())
     @patch("plugins.editorial_manager_transfer_service.utils.settings.get_submission_partner_code",
            new=_get_submission_partner_code)
@@ -63,8 +65,8 @@ class TestMetadataCreation(TestCase):
         journal = article.journal
 
         jats_filepath = generate_jats_metadata(journal, article, article_utils._get_article_export_folders())
-        if not os.path.exists(jats_filepath):
-            self.fail("Metadata {} does not exist".format(jats_filepath))
+        if (jats_filepath is None) or not os.path.exists(jats_filepath):
+            self.fail(f"Metadata \"{jats_filepath}\" does not exist")
 
         # Get the XML file.
         parser = etree.XMLParser(remove_blank_text=True)
@@ -75,4 +77,4 @@ class TestMetadataCreation(TestCase):
 
         root = tree.getroot()
         self.assertIsNotNone(root)
-        self.assertEqual("article", root.tag)
+        validate_xml(self, root, article)

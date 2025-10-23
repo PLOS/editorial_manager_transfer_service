@@ -59,10 +59,10 @@ def generate_jats_metadata(journal: Journal, article: Article, article_folder: s
         logger.exception('JATS file not found.', e)
         return None
     except TemplateSyntaxError as e:
-        logger.exception('JATS template syntax error for article {ID: {article_id}).'.format(article_id=article.pk), e)
+        logger.exception(f'JATS template syntax error for article (ID: {article.pk}).', e)
         return None
 
-    file_name = '{uuid}_{id}.xml'.format(uuid=uuid.uuid4(), id=article.pk)
+    file_name = f'{uuid.uuid4()}_{article.pk}.xml'
     full_path = os.path.join(article_folder, file_name)
 
     with codecs.open(full_path, 'w', "utf-8") as file:

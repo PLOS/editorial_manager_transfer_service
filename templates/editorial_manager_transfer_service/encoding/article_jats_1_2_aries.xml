@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE article SYSTEM "JATS-archivearticle1-mathml3.dtd">{% load settings text %}{# A template for encoding an submission.models.Article as JATS 1.2 #}{# Context: `journal` `article` `body` `include_declaration` `answer_fields` `license` `affiliations`#}
+<!DOCTYPE article SYSTEM "JATS-archivearticle1-mathml3.dtd">
+        {% load settings text %}{# A template for encoding an submission.models.Article as JATS 1.2 #}{# Context: `journal` `article` `body` `include_declaration` `answer_fields` `license` `affiliations`#}
 <article
-        article-type="{{ article.section|default:'research-article' }}"
+        article-type="{{ article.section.jats_article_type|default:'research-article' }}"
         dtd-version="1.1d1"
         xml:lang="{{ article.iso639_1_lang_code }}"
         xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -32,15 +33,11 @@
                 <article-title>{{ article.title|safe }}</article-title>
             </title-group>
             <contrib-group>
-                {% for item in article.frozen_authors_for_jats_contribs %} {% with author=item.author
-                affiliations=item.affiliations %}
+                {% for item in article.frozen_authors_for_jats_contribs %}
+                {% with author=item.author affiliations=item.affiliations %}
                 <contrib contrib-type="author"{% if author.is_correspondence_author %} corresp="yes"{% endif %}>
                 {% if author.order %}<role content-type="{{ author.order }}"/>{% endif %}
-                {% if author.credits %}
-                {% for credit_record in author.credits.all %}
-                <role vocab="CRediT" vocab-term="{{ credit_record.get_role_display }}"/>
-                {% endfor %}
-                {% endif %}
+                {% if author.credits %}{% for credit_record in author.credits.all %}<role vocab="CRediT" vocab-term="{{ credit_record.get_role_display }}"/>{% endfor %} {% endif %}
                 <name>
                     <surname>{{ author.last_name|safe }}</surname>
                     <given-names>{{ author.given_names|safe }}</given-names>
@@ -161,7 +158,7 @@
     </funding-group>
     {% endif %}
 
-    {% if article.data_figure_files.all %}
+    {% if article.data_figure_files.exists %}
     <counts>
         <fig-count count="{{ article.data_figure_files.all.count }}"/>
     </counts>
