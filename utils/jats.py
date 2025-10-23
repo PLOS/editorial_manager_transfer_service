@@ -2,9 +2,10 @@ __author__ = "Rosetta Reatherford"
 __license__ = "AGPL v3"
 __maintainer__ = "The Public Library of Science (PLOS)"
 
+import codecs
 import os
 import uuid
-import codecs
+from typing import List
 
 from django.template import TemplateDoesNotExist, TemplateSyntaxError
 from django.template.loader import render_to_string
@@ -14,10 +15,11 @@ from journal.models import Journal
 from plugins.editorial_manager_transfer_service import consts
 from plugins.editorial_manager_transfer_service.utils import settings
 from plugins.editorial_manager_transfer_service.utils.data_fetch import fetch_answer_fields_for_jats
-from submission.models import Article
+from submission.models import Article, FieldAnswer
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
+
 
 def generate_jats_metadata(journal: Journal, article: Article, article_folder: str) -> str | None:
     """
@@ -43,19 +45,12 @@ def generate_jats_metadata(journal: Journal, article: Article, article_folder: s
 
     template = consts.JATS_XML_FILE
 
-    answer_fields = fetch_answer_fields_for_jats(article)
-    if not answer_fields:
+    answer_fields: List[FieldAnswer] | None = fetch_answer_fields_for_jats(article)
+    if answer_fields is None:
         answer_fields = []
 
-    context = {
-        'journal': journal,
-        'article': article,
-        'include_declaration': True,
-        'body': True,
-        'answer_fields': answer_fields,
-        'license': get_xml_license_code(journal),
-        'affiliations': []
-    }
+    context = {'journal': journal, 'article': article, 'include_declaration': True, 'body': True,
+               'answer_fields': answer_fields, 'license': get_xml_license_code(journal), 'affiliations': []}
 
     try:
         rendered_jats: SafeString = render_to_string(template, context)
@@ -65,8 +60,6 @@ def generate_jats_metadata(journal: Journal, article: Article, article_folder: s
         return None
     except TemplateSyntaxError as e:
         logger.exception('JATS template syntax error for article {ID: {article_id}).'.format(article_id=article.pk), e)
-        print('JATS template syntax error for article {ID: {article_id}).'.format(article_id=article.pk))
-        print(e)
         return None
 
     file_name = '{uuid}_{id}.xml'.format(uuid=uuid.uuid4(), id=article.pk)
@@ -77,6 +70,7 @@ def generate_jats_metadata(journal: Journal, article: Article, article_folder: s
         file.close()
 
     return full_path
+
 
 def get_xml_license_code(journal: Journal) -> str:
     """

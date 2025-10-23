@@ -9,15 +9,10 @@ import re
 
 from django.conf import settings as django_settings
 from django.core.files import File as DjangoFile
-from django.db.models import Model
 from hypothesis import strategies as st
 
-from core import (
-    models as core_models,
-    files as core_files,
-)
+from core import (models as core_models, files as core_files, )
 from core import settings
-from core.model_utils import AbstractSiteModel
 from core.models import File, Account, Setting, SettingGroup, setting_types, SettingValue, ControlledAffiliation, \
     Organization, OrganizationName, Location, Country, Role
 from journal.models import Journal
@@ -57,19 +52,12 @@ def create_default_settings() -> None:
     """
     Creates the default settings for to test this plugin.
     """
-    with codecs.open(
-            os.path.join(settings.BASE_DIR, "utils/install/submission_items.json")
-    ) as json_data:
+    with codecs.open(os.path.join(settings.BASE_DIR, "utils/install/submission_items.json")) as json_data:
         submission_items = json.load(json_data)
         for i, setting in enumerate(submission_items):
             if not setting.get("group") == "special":
-                setting_group_obj, c = core_models.SettingGroup.objects.get_or_create(
-                        name=setting.get("group"),
-                )
-                core_models.Setting.objects.get_or_create(
-                        group=setting_group_obj,
-                        name=setting.get("name"),
-                )
+                setting_group_obj, c = core_models.SettingGroup.objects.get_or_create(name=setting.get("group"), )
+                core_models.Setting.objects.get_or_create(group=setting_group_obj, name=setting.get("name"), )
 
 
 def database_crafter_create_default_xsl() -> None:
@@ -85,6 +73,7 @@ def database_crafter_create_default_xsl() -> None:
 def create_group_setting(group_name: str) -> SettingGroup:
     setting, created = SettingGroup.objects.get_or_create(name=group_name)
     return setting
+
 
 @st.composite
 def get_random_index(draw, obj_count: int) -> int | None:
@@ -103,6 +92,7 @@ def get_random_index(draw, obj_count: int) -> int | None:
 
     return None
 
+
 @st.composite
 def create_setting(draw, group_name: str, setting_name: str) -> Setting:
     setting_group: SettingGroup = create_group_setting(group_name=group_name)
@@ -112,12 +102,8 @@ def create_setting(draw, group_name: str, setting_name: str) -> Setting:
         description = draw(st.text(alphabet=ACCEPTABLE_CHARACTER_CATEGORIES, min_size=1))
         is_translatable = draw(st.booleans())
         setting_type = draw(st.sampled_from(setting_types))
-        setting.defaults = {
-            "pretty_name": pretty_name,
-            "description": description,
-            "is_translatable": is_translatable,
-            "type": setting_type,
-        }
+        setting.defaults = {"pretty_name": pretty_name, "description": description, "is_translatable": is_translatable,
+            "type": setting_type, }
         setting.save()
 
     return setting
@@ -157,7 +143,8 @@ def create_journal(draw) -> Journal:
 def create_field(draw, journal: Journal) -> Field:
     name = draw(st.text(alphabet=ACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=40))
     order = 0
-    field: Field = Field.objects.create(name=name, journal=journal, order=order)
+    slug = draw(st.from_regex(uuid4_regex))
+    field: Field = Field.objects.create(name=name, slug=slug, journal=journal, order=order)
     return field
 
 
@@ -212,9 +199,7 @@ def create_location(draw) -> Location:
 def create_organization_name(draw, organization: Organization) -> OrganizationName:
     value = draw(st.text(alphabet=ACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=1000))
 
-    return OrganizationName.objects.create(value=value,
-                                           ror_display_for=organization,
-                                           label_for=organization, )
+    return OrganizationName.objects.create(value=value, ror_display_for=organization, label_for=organization, )
 
 
 @st.composite
@@ -246,13 +231,8 @@ def create_controlled_affiliation(draw, account: Account, is_primary: bool = Fal
 
     organization = draw(create_organization())
 
-    return ControlledAffiliation.objects.create(account=account,
-                                                organization=organization,
-                                                is_primary=is_primary,
-                                                start=start,
-                                                end=end,
-                                                title=title,
-                                                department=department, )
+    return ControlledAffiliation.objects.create(account=account, organization=organization, is_primary=is_primary,
+                                                start=start, end=end, title=title, department=department, )
 
 
 @st.composite
@@ -267,23 +247,12 @@ def create_account(draw) -> Account:
     while not email:
         email = draw(create_unique_email())
 
-    first_name = draw(
-            st.text(alphabet=ACCEPTABLE_CHARACTER_CATEGORIES, min_size=1,
-                    max_size=300))
-    middle_name = draw(
-            st.text(alphabet=ACCEPTABLE_CHARACTER_CATEGORIES, min_size=0,
-                    max_size=300))
-    last_name = draw(
-            st.text(alphabet=ACCEPTABLE_CHARACTER_CATEGORIES, min_size=1,
-                    max_size=300))
+    first_name = draw(st.text(alphabet=ACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=300))
+    middle_name = draw(st.text(alphabet=ACCEPTABLE_CHARACTER_CATEGORIES, min_size=0, max_size=300))
+    last_name = draw(st.text(alphabet=ACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=300))
 
-    account = Account.objects.create(
-            email=email,
-            username=email.lower(),
-            first_name=first_name,
-            middle_name=middle_name,
-            last_name=last_name,
-    )
+    account = Account.objects.create(email=email, username=email.lower(), first_name=first_name,
+            middle_name=middle_name, last_name=last_name, )
 
     # Make some affiliations
     draw(create_controlled_affiliation(account, is_primary=True))
@@ -297,8 +266,7 @@ def create_account(draw) -> Account:
 @st.composite
 def create_txt_file(draw, article: Article) -> File:
     filename: str = draw(st.from_regex(valid_filename_regex))
-    manuscript_filepath = os.path.join(_get_article_export_folders(),
-                                       "{0}.txt".format(filename))
+    manuscript_filepath = os.path.join(_get_article_export_folders(), "{0}.txt".format(filename))
     content = "This is the first line.\nThis is the second line."
     with open(manuscript_filepath, 'w') as file:
         try:
@@ -330,12 +298,7 @@ def create_article(draw) -> Article:
     subtitle = draw(st.text(alphabet=ACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=999))
     abstract = draw(st.text(alphabet=ACCEPTABLE_CHARACTER_CATEGORIES, min_size=1))
     journal: Journal = draw(create_journal())
-    article: Article = Article.objects.create(
-            title=title,
-            subtitle=subtitle,
-            abstract=abstract,
-            journal=journal,
-    )
+    article: Article = Article.objects.create(title=title, subtitle=subtitle, abstract=abstract, journal=journal, )
 
     manuscript: File = draw(create_txt_file(article=article))
     article.manuscript_files.add(manuscript)

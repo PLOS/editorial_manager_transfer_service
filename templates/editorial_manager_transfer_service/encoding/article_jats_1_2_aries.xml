@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE article SYSTEM "JATS-archivearticle1-mathml3.dtd">
-{% load settings text %}{# A template for encoding an submission.models.Article as JATS 1.2 #}{# Context: `journal` `article` `body` `include_declaration` `answer_fields` `license` `affiliations`#}
-{% if validation_error %}<!-- {{ validation_error }} -->{% endif %}
+<!DOCTYPE article SYSTEM "JATS-archivearticle1-mathml3.dtd">{% load settings text %}{# A template for encoding an submission.models.Article as JATS 1.2 #}{# Context: `journal` `article` `body` `include_declaration` `answer_fields` `license` `affiliations`#}
 <article
         article-type="{{ article.section|default:'research-article' }}"
         dtd-version="1.1d1"
@@ -34,13 +32,14 @@
                 <article-title>{{ article.title|safe }}</article-title>
             </title-group>
             <contrib-group>
-                {% for item in article.frozen_authors_for_jats_contribs %} {% with author=item.author affiliations=item.affiliations %}
+                {% for item in article.frozen_authors_for_jats_contribs %} {% with author=item.author
+                affiliations=item.affiliations %}
                 <contrib contrib-type="author"{% if author.is_correspondence_author %} corresp="yes"{% endif %}>
                 {% if author.order %}<role content-type="{{ author.order }}"/>{% endif %}
                 {% if author.credits %}
-                    {% for credit_record in author.credits.all %}
-                    <role vocab="CRediT" vocab-term="{{ credit_record.get_role_display }}"/>
-                    {% endfor %}
+                {% for credit_record in author.credits.all %}
+                <role vocab="CRediT" vocab-term="{{ credit_record.get_role_display }}"/>
+                {% endfor %}
                 {% endif %}
                 <name>
                     <surname>{{ author.last_name|safe }}</surname>
@@ -48,12 +47,12 @@
                     {% if author.name_prefix %}<prefix>{{ author.name_prefix|safe }}</prefix>{% endif %}
                 </name>
                 {% if author.orcid %}
-                    <contrib-id contrib-id-type="orcid"
-                    {% if author.orcid_uri %}
-                    authenticated="true"{% endif %}>
-                    {{ author.orcid }}
-                    </contrib-id>
-                {% endif %}
+                <contrib-id contrib-id-type="orcid"
+                {% if author.orcid_uri %}
+                authenticated="true"{% endif %}>
+                {{ author.orcid }}
+            </contrib-id>
+            {% endif %}
             {% if author.email %}
             <email>{{ author.email }}</email>
             {% endif %}
@@ -169,8 +168,8 @@
     {% endif %}
     {% if answer_fields %}
     <custom-meta-group>
-        {% for field in answer_fields.all %}
-        <custom-meta id="ques_{{ forloop.counter }}" specific-use="question">
+        {% for field in answer_fields %}
+        <custom-meta id="{{ field.field.slug }}" specific-use="question">
             <meta-name>{{ field.field.name|safe }}</meta-name>
             <meta-value>{{ field.answer|safe }}</meta-value>
         </custom-meta>
