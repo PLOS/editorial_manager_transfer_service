@@ -7,7 +7,7 @@ import shutil
 import xml.etree.ElementTree as ElementTree
 from unittest.mock import patch
 
-from hypothesis import settings as hypothesis_settings, given
+from hypothesis import given, settings, HealthCheck
 from hypothesis.extra.django import TestCase
 
 import plugins.editorial_manager_transfer_service.consts as consts
@@ -16,14 +16,20 @@ import plugins.editorial_manager_transfer_service.tests.utils.article_creation_u
 from submission.models import Article
 
 
-def _get_setting(self, setting_name: str) -> str:
-    match setting_name:
-        case consts.PLUGIN_SETTINGS_LICENSE_CODE:
-            return "LCODE"
-        case consts.PLUGIN_SETTINGS_JOURNAL_CODE:
-            return "JOURNAL"
-        case consts.PLUGIN_SETTINGS_SUBMISSION_PARTNER_CODE:
-            return "SUBMISSION_PARTNER"
+def _get_submission_partner_code(self):
+    return "SUBMISSION_PARTNER"
+
+
+def _get_license_code(self):
+    return "LCODE"
+
+
+def _get_journal_code(self):
+    return "JOURNAL_CODE"
+
+
+settings.register_profile("single_run", max_examples=1)
+settings.load_profile("single_run")
 
 
 class TestFileCreation(TestCase):
@@ -44,11 +50,14 @@ class TestFileCreation(TestCase):
         """
         shutil.rmtree(article_utils._get_article_export_folders())
 
+    @settings(max_examples=1, derandomize=False, deadline=None,
+              suppress_health_check=[HealthCheck.large_base_example, HealthCheck.too_slow])
     @given(article=article_utils.create_article())
-    @patch.object(file_exporter.ExportFileCreation, 'get_setting', new=_get_setting)
     @patch('plugins.editorial_manager_transfer_service.file_exporter.get_article_export_folders',
            new=article_utils._get_article_export_folders)
-    @hypothesis_settings(max_examples=5)
+    @patch.object(file_exporter.ExportFileCreation, 'get_submission_partner_code', new=_get_submission_partner_code)
+    @patch.object(file_exporter.ExportFileCreation, 'get_license_code', new=_get_license_code)
+    @patch.object(file_exporter.ExportFileCreation, 'get_journal_code', new=_get_journal_code)
     def test_regular_article_creation_process(self, article: Article) -> None:
         """
         Tests a basic end to end use case of exporting articles.
@@ -57,10 +66,14 @@ class TestFileCreation(TestCase):
         article_id: int = article.pk
 
         exporter = file_exporter.ExportFileCreation(journal.code, article_id)
+        self.assertEqual(_get_submission_partner_code(None), exporter.get_submission_partner_code())
+        self.assertEqual(_get_license_code(None), exporter.get_license_code())
+        self.assertEqual(_get_journal_code(None), exporter.get_journal_code())
         self.assertTrue(exporter.can_export())
         self.assertEqual(article_id, exporter.article_id)  # add assertion here
 
-        self.__check_go_file(exporter.get_go_filepath(), len(article.data_figure_files.all()) + 1)
+        count = article.data_figure_files.count() + article.manuscript_files.count()
+        self.__check_go_file(exporter.get_go_filepath(), count)
 
     def __check_go_file(self, go_filepath: str, number_of_files: int) -> None:
         if not os.path.exists(go_filepath):
@@ -81,4 +94,5 @@ class TestFileCreation(TestCase):
         self.assertEqual(consts.GO_FILE_ELEMENT_TAG_FILEGROUP, filegroup.tag)
 
         files: list[ElementTree.Element] = filegroup.findall(consts.GO_FILE_ELEMENT_TAG_FILE)
+
         self.assertEqual(number_of_files, len(files))

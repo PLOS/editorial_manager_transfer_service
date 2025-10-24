@@ -10,8 +10,8 @@ from django.shortcuts import render
 from journal.models import Journal
 from plugins.editorial_manager_transfer_service import forms
 from plugins.editorial_manager_transfer_service.enums.report_state import ReportState
-from plugins.editorial_manager_transfer_service.logic import get_plugin_settings, save_plugin_settings
 from plugins.editorial_manager_transfer_service.models import TransferReport, TransferLogs
+from plugins.editorial_manager_transfer_service.utils.settings import get_plugin_settings, save_plugin_settings
 from plugins.production_transporter.utilities import data_fetch
 from security import decorators
 from utils.logger import get_logger
@@ -30,7 +30,7 @@ def manager(request):
         submission_partner_code,
         license_code,
         journal_code,
-    ) = get_plugin_settings(request.journal)
+    ) = get_plugin_settings(request.journal, True)
 
     if request.POST:
         form = forms.EditorialManagerTransferServiceForm(request.POST)
