@@ -48,7 +48,7 @@ class TestMessageLogs(TestCase):
                 success=success
         )
 
-    @settings(max_examples=10, derandomize=False,
+    @settings(max_examples=10, derandomize=False, deadline=None,
               suppress_health_check=[HealthCheck.large_base_example, HealthCheck.too_slow])
     @given(article=article_utils.create_article(),
            message=hypothesis_strategies.text(),

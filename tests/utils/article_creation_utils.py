@@ -11,8 +11,7 @@ from django.conf import settings as django_settings
 from django.core.files import File as DjangoFile
 from hypothesis import strategies as st
 
-from core import (models as core_models, files as core_files, )
-from core import settings
+from core import (models as core_models, files as core_files, settings as core_settings)
 from core.models import File, Account, Setting, SettingGroup, setting_types, SettingValue, ControlledAffiliation, \
     Organization, OrganizationName, Location, Country, Role
 from journal.models import Journal
@@ -20,7 +19,7 @@ from plugins.editorial_manager_transfer_service import consts
 from submission.models import Article, Field, FieldAnswer, FrozenAuthor
 
 ACCEPTABLE_CHARACTER_CATEGORIES = st.characters(blacklist_categories=["C", "S"], blacklist_characters=['&'])
-EXPORT_FOLDER = os.path.join(settings.BASE_DIR, "collected-static", consts.SHORT_NAME, "export")
+EXPORT_FOLDER = os.path.join(core_settings.BASE_DIR, "collected-static", consts.SHORT_NAME, "export")
 
 uuid4_regex = re.compile('^([a-z0-9]{8}(-[a-z0-9]{4}){3}-[a-z0-9]{12})$')
 valid_filename_regex = re.compile("^[\w\-. ]+$")
@@ -55,7 +54,7 @@ def create_default_settings() -> None:
     """
     Creates the default settings for to test this plugin.
     """
-    with codecs.open(os.path.join(settings.BASE_DIR, "utils/install/submission_items.json")) as json_data:
+    with codecs.open(os.path.join(core_settings.BASE_DIR, "utils/install/submission_items.json")) as json_data:
         submission_items = json.load(json_data)
         for i, setting in enumerate(submission_items):
             if not setting.get("group") == "special":

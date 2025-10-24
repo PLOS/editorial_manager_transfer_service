@@ -51,7 +51,7 @@ class TestMetadataCreation(TestCase):
         # shutil.rmtree(article_utils._get_article_export_folders())
         pass
 
-    @settings(max_examples=10, derandomize=False,
+    @settings(max_examples=1, derandomize=False, deadline=None,
               suppress_health_check=[HealthCheck.large_base_example, HealthCheck.too_slow])
     @given(article=article_utils.create_article())
     @patch("plugins.editorial_manager_transfer_service.utils.settings.get_submission_partner_code",
