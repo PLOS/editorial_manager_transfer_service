@@ -1,0 +1,81 @@
+__author__ = "Rosetta Reatherford"
+__license__ = "AGPL v3"
+__maintainer__ = "The Public Library of Science (PLOS)"
+
+import codecs
+import os
+import uuid
+from typing import List
+
+from django.template import TemplateDoesNotExist, TemplateSyntaxError
+from django.template.loader import render_to_string
+from django.utils.safestring import SafeString
+
+from journal.models import Journal
+from plugins.editorial_manager_transfer_service import consts
+from plugins.editorial_manager_transfer_service.utils import settings
+from plugins.editorial_manager_transfer_service.utils.data_fetch import fetch_answer_fields_for_jats
+from submission.models import Article, FieldAnswer
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
+
+
+def generate_jats_metadata(journal: Journal, article: Article, article_folder: str) -> str | None:
+    """
+
+    :param journal:
+    :param article:
+    :param article_folder:
+    :return: Gets the filepath of the generated JATS file
+    """
+    logger.debug('Generating JATS file...')
+
+    if not article:
+        logger.error('No article given')
+        return None
+
+    if not journal:
+        logger.error('No journal given')
+        return None
+
+    if not article_folder:
+        logger.error('No article folder given')
+        return None
+
+    template = consts.JATS_XML_FILE
+
+    answer_fields: List[FieldAnswer] | None = fetch_answer_fields_for_jats(article)
+    if answer_fields is None:
+        answer_fields = []
+
+    context = {'journal': journal, 'article': article, 'include_declaration': True, 'body': True,
+               'answer_fields': answer_fields, 'license': get_xml_license_code(journal), 'affiliations': []}
+
+    try:
+        rendered_jats: SafeString = render_to_string(template, context)
+        logger.debug('Generated JATS file.')
+    except TemplateDoesNotExist as e:
+        logger.exception('JATS file not found.', e)
+        return None
+    except TemplateSyntaxError as e:
+        logger.exception(f'JATS template syntax error for article (ID: {article.pk}).', e)
+        return None
+
+    file_name = f'{uuid.uuid4()}_{article.pk}.xml'
+    full_path = os.path.join(article_folder, file_name)
+
+    with codecs.open(full_path, 'w', "utf-8") as file:
+        file.write(rendered_jats)
+        file.close()
+
+    return full_path
+
+
+def get_xml_license_code(journal: Journal) -> str:
+    """
+    Gets the license code for the XML.
+    :param journal: The journal where the setting lives.
+    :return: The XML license code.
+    """
+    return "{0}_{1}".format(settings.get_submission_partner_code(journal), settings.get_license_code(journal))
