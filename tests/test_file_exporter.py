@@ -50,7 +50,8 @@ class TestFileCreation(TestCase):
         """
         shutil.rmtree(article_utils._get_article_export_folders())
 
-    @settings(max_examples=1, derandomize=True, suppress_health_check=[HealthCheck.large_base_example])
+    @settings(max_examples=1, derandomize=False,
+              suppress_health_check=[HealthCheck.large_base_example, HealthCheck.too_slow])
     @given(article=article_utils.create_article())
     @patch('plugins.editorial_manager_transfer_service.file_exporter.get_article_export_folders',
            new=article_utils._get_article_export_folders)

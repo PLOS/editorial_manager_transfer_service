@@ -45,7 +45,10 @@ def database_crafter_do_preqs() -> None:
 
 
 def create_default_roles() -> None:
-    Role.objects.create(slug="author")
+    """
+    Makes sure there is a role for authors.
+    """
+    Role.objects.get_or_create(slug="author")
 
 
 def create_default_settings() -> None:

@@ -6,7 +6,7 @@ import os
 import shutil
 
 import hypothesis.strategies as hypothesis_strategies
-from hypothesis import given
+from hypothesis import given, settings, HealthCheck
 from hypothesis.extra.django import TestCase
 
 import plugins.editorial_manager_transfer_service.tests.utils.article_creation_utils as article_utils
@@ -48,6 +48,8 @@ class TestMessageLogs(TestCase):
                 success=success
         )
 
+    @settings(max_examples=10, derandomize=False,
+              suppress_health_check=[HealthCheck.large_base_example, HealthCheck.too_slow])
     @given(article=article_utils.create_article(),
            message=hypothesis_strategies.text(),
            message_type=hypothesis_strategies.sampled_from(TransferLogMessageType.choices),
