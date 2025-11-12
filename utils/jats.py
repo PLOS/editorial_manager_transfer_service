@@ -104,7 +104,7 @@ def add_ringgold_id_to_affiliation(affiliation) -> None:
     :param affiliation: The affiliation to add the Ringgold ID to.
     """
     # TODO: Fetch Ringgold.
-    affiliation.ringgold_id = "STATIC"
+    affiliation.ringgold_id = "1812"
 
 def get_xml_license_code(journal: Journal) -> str:
     """
