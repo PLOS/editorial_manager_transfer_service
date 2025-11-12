@@ -7,6 +7,7 @@ import os
 import uuid
 from typing import List
 
+from core.models import Organization
 from django.template import TemplateDoesNotExist, TemplateSyntaxError
 from django.template.loader import render_to_string
 from django.utils.safestring import SafeString
@@ -15,7 +16,7 @@ from journal.models import Journal
 from plugins.editorial_manager_transfer_service import consts
 from plugins.editorial_manager_transfer_service.utils import settings
 from plugins.editorial_manager_transfer_service.utils.data_fetch import fetch_answer_fields_for_jats
-from submission.models import Article, FieldAnswer
+from submission.models import Article, FieldAnswer, FrozenAuthor
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -23,10 +24,10 @@ logger = get_logger(__name__)
 
 def generate_jats_metadata(journal: Journal, article: Article, article_folder: str) -> str | None:
     """
-
-    :param journal:
-    :param article:
-    :param article_folder:
+    Generates JATS metadata for an article.
+    :param journal: The journal the article lives within.
+    :param article: The article to generate metadata for.
+    :param article_folder: The folder under which the article is stored.
     :return: Gets the filepath of the generated JATS file
     """
     logger.debug('Generating JATS file...')
@@ -49,8 +50,10 @@ def generate_jats_metadata(journal: Journal, article: Article, article_folder: s
     if answer_fields is None:
         answer_fields = []
 
+    frozen_authors = fetch_author_metadata(article)
+
     context = {'journal': journal, 'article': article, 'include_declaration': True, 'body': True,
-               'answer_fields': answer_fields, 'license': get_xml_license_code(journal), 'affiliations': []}
+               'answer_fields': answer_fields, 'license': get_xml_license_code(journal), 'frozen_authors': frozen_authors,}
 
     try:
         rendered_jats: SafeString = render_to_string(template, context)
@@ -71,6 +74,37 @@ def generate_jats_metadata(journal: Journal, article: Article, article_folder: s
 
     return full_path
 
+def fetch_author_metadata(article: Article) -> List[{author: FrozenAuthor, affiliations: List[Organization]}]:
+    frozen_authors = article.frozen_authors_for_jats_contribs()
+
+    for frozen_author in frozen_authors:
+        author = frozen_author.author
+        affiliations = author.affiliations
+
+        add_people_id(author)
+        for affiliation in affiliations:
+            add_ringgold_id_to_affiliation(affiliation)
+
+
+    return frozen_authors
+
+def add_people_id(author: FrozenAuthor) -> None:
+    """
+    Adds the EM people ID to the author using the email of the author.
+    :param author: The author to fetch and add the People ID to.
+    """
+    # TODO: Fetch People ID
+    people_id = author.pk
+
+    author['people_id'] = people_id
+
+def add_ringgold_id_to_affiliation(affiliation) -> None:
+    """
+    Adds the Ringgold ID to the affiliation.
+    :param affiliation: The affiliation to add the Ringgold ID to.
+    """
+    # TODO: Fetch Ringgold.
+    affiliation.ringgold_id = "STATIC"
 
 def get_xml_license_code(journal: Journal) -> str:
     """
