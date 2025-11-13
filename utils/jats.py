@@ -7,15 +7,17 @@ import os
 import uuid
 from typing import List
 
-from core.models import Organization
 from django.template import TemplateDoesNotExist, TemplateSyntaxError
 from django.template.loader import render_to_string
 from django.utils.safestring import SafeString
 
+from core.models import Organization
 from journal.models import Journal
 from plugins.editorial_manager_transfer_service import consts
 from plugins.editorial_manager_transfer_service.utils import settings
 from plugins.editorial_manager_transfer_service.utils.data_fetch import fetch_answer_fields_for_jats
+from plugins.editorial_manager_transfer_service.utils.interfaces.FrozenAuthorForJats import JATSFrozenAuthor, \
+    JATSFrozenAffiliation, FrozenAuthorForJats
 from submission.models import Article, FieldAnswer, FrozenAuthor
 from utils.logger import get_logger
 
@@ -53,7 +55,8 @@ def generate_jats_metadata(journal: Journal, article: Article, article_folder: s
     frozen_authors = fetch_author_metadata(article)
 
     context = {'journal': journal, 'article': article, 'include_declaration': True, 'body': True,
-               'answer_fields': answer_fields, 'license': get_xml_license_code(journal), 'frozen_authors': frozen_authors,}
+               'answer_fields': answer_fields, 'license': get_xml_license_code(journal),
+               'frozen_authors': frozen_authors, }
 
     try:
         rendered_jats: SafeString = render_to_string(template, context)
@@ -74,21 +77,33 @@ def generate_jats_metadata(journal: Journal, article: Article, article_folder: s
 
     return full_path
 
-def fetch_author_metadata(article: Article) -> List[{author: FrozenAuthor, affiliations: List[Organization]}]:
+
+def fetch_author_metadata(article: Article) -> List[FrozenAuthorForJats]:
+    """
+    Fetches the metadata for an author.
+    :param article: The article to fetch the author metadata for.
+    :return: A list of authors and their affiliations.
+    """
     frozen_authors = article.frozen_authors_for_jats_contribs()
 
+    frozen_auths = []
+
     for frozen_author in frozen_authors:
-        author = frozen_author.author
-        affiliations = author.affiliations
+        frozen_auth: FrozenAuthorForJats = FrozenAuthorForJats()
 
-        add_people_id(author)
+        author = frozen_author['author']
+        affiliations = frozen_author['affiliations']
+
+        frozen_auth.author = add_people_id(author)
         for affiliation in affiliations:
-            add_ringgold_id_to_affiliation(affiliation)
+            frozen_auth.affiliations.append(add_ringgold_id_to_affiliation(affiliation))
+
+        frozen_auths.append(frozen_auth)
+
+    return frozen_auths
 
 
-    return frozen_authors
-
-def add_people_id(author: FrozenAuthor) -> None:
+def add_people_id(author: FrozenAuthor) -> JATSFrozenAuthor:
     """
     Adds the EM people ID to the author using the email of the author.
     :param author: The author to fetch and add the People ID to.
@@ -96,15 +111,19 @@ def add_people_id(author: FrozenAuthor) -> None:
     # TODO: Fetch People ID
     people_id = author.pk
 
-    author['people_id'] = people_id
+    return JATSFrozenAuthor(author, people_id)
 
-def add_ringgold_id_to_affiliation(affiliation) -> None:
+
+def add_ringgold_id_to_affiliation(affiliation: Organization) -> JATSFrozenAffiliation:
     """
     Adds the Ringgold ID to the affiliation.
     :param affiliation: The affiliation to add the Ringgold ID to.
     """
     # TODO: Fetch Ringgold.
-    affiliation.ringgold_id = "1812"
+    ringgold_id = "1812"
+
+    return JATSFrozenAffiliation(affiliation, ringgold_id)
+
 
 def get_xml_license_code(journal: Journal) -> str:
     """
