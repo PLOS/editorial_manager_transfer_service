@@ -111,8 +111,8 @@ def transfer_report_resend_article(request, journal: Journal, article_id_str: st
         logger.error(f"Could not convert article ID {article_id_str} to an integer.")
         return
 
-    from plugins.production_transporter.utils import do_file_transfer
-    do_file_transfer(request, journal, article_id=article_id)
+    from plugins.production_transporter.utils import schedule_file_transfer
+    schedule_file_transfer(request, journal.code, article_id=article_id)
 
 
 @staff_member_required
