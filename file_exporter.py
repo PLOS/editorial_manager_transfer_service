@@ -250,7 +250,7 @@ class ExportFileCreation:
                 self.in_error_state = True
                 return None
 
-            self.xml_filepath = f"{filepath}.xml"
+            self.xml_filepath = filepath
         return self.xml_filepath
 
     def __fetch_article(self, journal: Journal | None, article_id: int | None) -> Article | None:
