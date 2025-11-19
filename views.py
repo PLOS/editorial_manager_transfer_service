@@ -29,7 +29,7 @@ def manager(request):
     (
         submission_partner_code,
         license_code,
-        journal_code,
+        em_journal_code,
     ) = get_plugin_settings(request.journal, True)
 
     if request.POST:
@@ -38,13 +38,13 @@ def manager(request):
         if form.is_valid():
             submission_partner_code = form.cleaned_data["submission_partner_code"]
             license_code = form.cleaned_data["license_code"]
-            journal_code = form.cleaned_data["journal_code"]
+            em_journal_code = form.cleaned_data["journal_code"]
 
             save_plugin_settings(
+                    request.journal,
                     submission_partner_code,
                     license_code,
-                    journal_code,
-                    request,
+                    em_journal_code,
             )
 
             messages.add_message(
@@ -64,7 +64,7 @@ def manager(request):
                 initial={
                     "submission_partner_code": submission_partner_code,
                     "license_code": license_code,
-                    "journal_code": journal_code,
+                    "journal_code": em_journal_code,
                 }
         )
 
