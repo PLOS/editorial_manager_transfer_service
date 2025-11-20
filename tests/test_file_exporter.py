@@ -48,7 +48,8 @@ class TestFileCreation(TestCase):
         """
         Tears down after each test to ensure each test is unique.
         """
-        shutil.rmtree(article_utils._get_article_export_folders())
+        #shutil.rmtree(article_utils._get_article_export_folders())
+        pass
 
     @settings(max_examples=1, derandomize=False, deadline=None,
               suppress_health_check=[HealthCheck.large_base_example, HealthCheck.too_slow])

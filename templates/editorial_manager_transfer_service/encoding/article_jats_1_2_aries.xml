@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE article SYSTEM "JATS-archivearticle1-mathml3.dtd">
-        {% load settings text %}{# A template for encoding an submission.models.Article as JATS 1.2 #}{# Context: `journal` `article` `body` `include_declaration` `answer_fields` `license` `affiliations`#}
+        {% load settings text %}{# A template for encoding an submission.models.Article as JATS 1.2 #}{# Context: `journal` `article` `body` `include_declaration` `answer_fields` `license` `frozen_authors`#}
 <article
         article-type="{{ article.section.jats_article_type|default:'research-article' }}"
         dtd-version="1.1d1"
@@ -18,7 +18,7 @@
             <article-id pub-id-type="manuscript">{{ article.pk }}</article-id>
             {% if article.get_doi %}<article-id pub-id-type="doi">{{ article.get_doi }}</article-id>{% endif %}
             <article-categories>
-                {% if article.section.jats_article_type %}
+                {% if article.section %}
                 <subj-group subj-group-type="Article Type">
                     <subject id="atype-{{ article.section.id }}">{{ article.section.jats_article_type }}</subject>
                 </subj-group>
@@ -33,8 +33,8 @@
                 <article-title>{{ article.title|safe }}</article-title>
             </title-group>
             <contrib-group>
-                {% for item in article.frozen_authors_for_jats_contribs %}
-                {% with author=item.author affiliations=item.affiliations %}
+                {% for item in frozen_authors %}
+                {% with author=item.author.person affiliations=item.affiliations %}
                 <contrib contrib-type="author"{% if author.is_correspondence_author %} corresp="yes"{% endif %}>
                 {% if author.order %}<role content-type="{{ author.order }}"/>{% endif %}
                 {% if author.credits %}{% for credit_record in author.credits.all %}<role vocab="CRediT" vocab-term="{{ credit_record.get_role_display }}"/>{% endfor %} {% endif %}
@@ -62,36 +62,33 @@
             <collab>{{ author.corporate_name|safe }}</collab>
         </contrib>
         {% endif %}
-
-        {% for affiliation in affiliations %}
+		{% endwith %}
+        {% endfor %}
+		{% for item in frozen_authors %}
+        {% with affiliations=item.affiliations %}
+		{% for affiliation in affiliations %}
         <aff id="aff{{ forloop.parentloop.counter }}-{{ forloop.counter }}">
-            {% if affiliation.organization.uri %}
+            {% if affiliation.ringgold_id %}
             <institution-wrap>
-                <institution>{{ affiliation.organization.name|safe }}</institution>
-                {% if affiliation.organization.ror_id %}
-                <institution-id institution-id-type="ROR">
-                    {{ affiliation.organization.uri }}
-                </institution-id>
+                <institution>{{ affiliation.affiliation.organization.name|safe }}</institution>
+                {% if affiliation.ringgold_id %}
+                <institution-id institution-id-type="Ringgold">{{ affiliation.ringgold_id }}</institution-id>
                 {% endif %}
             </institution-wrap>
             {% else %}
-            <institution>{{ affiliation.organization.name|safe }}</institution>
+            <institution>{{ affiliation.affiliation.organization.name|safe }}</institution>
             {% endif %}
-            {% if affiliation.organization.title %}
-            <institution
-                    content-type="position">{{ affiliation.organization.title|safe }}
-            </institution>
+            {% if affiliation.affiliation.organization.title %}
+            <institution content-type="position">{{ affiliation.affiliation.organization.title|safe }}</institution>
             {% endif %}
-            {% if affiliation.organization.department %}
-            <institution
-                    content-type="dept">{{ affiliation.organization.department|safe }}
-            </institution>
+            {% if affiliation.affiliation.organization.department %}
+            <institution content-type="dept">{{ affiliation.affiliation.organization.department|safe }}</institution>
             {% endif %}
-            {% for addrline in affiliation.organization.locations.all %}
+            {% for addrline in affiliation.affiliation.organization.locations.all %}
             <addr-line content-type="addrline{{ forloop.counter }}">{{ addrline|safe }}</addr-line>
             {% endfor %}
-            {% if affiliation.organization.country %}
-            <country specific-use="us">{{ affiliation.organization.country|safe }}</country>
+            {% if affiliation.affiliation.organization.country %}
+            <country specific-use="us">{{ affiliation.affiliation.organization.country|safe }}</country>
             {% endif %}
         </aff>
         {% endfor %}
@@ -101,7 +98,6 @@
     {% if article.has_manuscript_file %}
     <ext-link specific-use="Manuscript" xlink:href="{{ article.pk }}.docx" xlink:title="Manuscript"/>
     {% endif %}
-
     {% if article.date_submitted or article.date_accepted %}
     <history>
         {% if article.date_submitted %}
@@ -157,7 +153,6 @@
         {% endfor %}
     </funding-group>
     {% endif %}
-
     {% if article.data_figure_files.exists %}
     <counts>
         <fig-count count="{{ article.data_figure_files.all.count }}"/>
@@ -185,7 +180,6 @@
     </fig>
     {% endfor %}
     {% endif %}
-
     {% if article.supplementary_files %}
     {% for suppFile in article.supplementary_files.all %}
     <supplementary-material specific-use="supplementary_file" xlink:href="{{ suppFile }}">
@@ -194,5 +188,5 @@
     {% endfor %}
     {% endif %}
 </body>
-        {% endif %}
-        </article>
+    {% endif %}
+</article>
