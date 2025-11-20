@@ -43,13 +43,13 @@ def save_plugin_settings(
         journal: Journal,
         submission_partner_code: str,
         license_code: str,
-        journal_code: str,
+        em_journal_code: str,
 ):
     """
     Save the plugin settings for the Editorial Manager Transfer Service.
     :param submission_partner_code: The submission partner code
     :param license_code: The license code
-    :param journal_code: The journal code
+    :param em_journal_code: The journal code
     :param journal: The journal where to save the plugin settings
     :return:
     """
@@ -69,5 +69,5 @@ def save_plugin_settings(
         setting_group_name=consts.PLUGIN_SETTINGS_GROUP_NAME,
         setting_name="journal_code",
         journal=journal,
-        value=journal_code,
+        value=em_journal_code,
     )
