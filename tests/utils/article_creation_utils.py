@@ -16,7 +16,7 @@ from core.models import File, Account, Setting, SettingGroup, setting_types, Set
     Organization, OrganizationName, Location, Country, Role
 from journal.models import Journal
 from plugins.editorial_manager_transfer_service import consts
-from submission.models import Article, Field, FieldAnswer, FrozenAuthor
+from submission.models import Article, Field, FieldAnswer, FrozenAuthor, ArticleFunding
 
 ACCEPTABLE_CHARACTER_CATEGORIES = st.characters(blacklist_categories=["C", "S"], blacklist_characters=['&'])
 EXPORT_FOLDER = os.path.join(core_settings.BASE_DIR, "collected-static", consts.SHORT_NAME, "export")
@@ -288,6 +288,20 @@ def create_frozen_author(draw, article: Article) -> FrozenAuthor:
     author = draw(create_account())
     return author.snapshot_as_author(article)
 
+@st.composite
+def create_funder(draw, article: Article) -> None:
+    name = draw(st.text(alphabet=ACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=500))
+    fundref_id = draw(st.text(alphabet=ACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=500))
+    funding_id = draw(st.text(alphabet=ACCEPTABLE_CHARACTER_CATEGORIES, min_size=1, max_size=500))
+
+    ArticleFunding.objects.create(name=name, article=article, fundref_id=fundref_id, funding_id=funding_id)
+
+@st.composite
+def create_funders(draw, article: Article) -> None:
+    funders: int = draw(st.integers(min_value=1, max_value=3))
+    for funder in range(funders):
+        draw(create_funder(article))
+
 
 @st.composite
 def create_article(draw) -> Article:
@@ -326,5 +340,7 @@ def create_article(draw) -> Article:
         frozen_correspondence_author: FrozenAuthor = draw(create_frozen_author(article=article))
         frozen_correspondence_author.associate_with_account()
         frozen_correspondence_author.save()
+
+    draw(create_funders(article=article))
 
     return article
