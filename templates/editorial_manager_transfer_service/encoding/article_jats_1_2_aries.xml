@@ -20,12 +20,9 @@
             <article-categories>
                 {% if article.section %}
                 <subj-group subj-group-type="Article Type">
-                    <subject id="atype-{{ article.section.id }}">{{ article.section.jats_article_type }}</subject>
-                </subj-group>
-                {% endif %}
-                {% if article.section.name %}
-                <subj-group subj-group-type="Category">
-                    <subject>{{ article.section.name|safe }}</subject>
+                    {% if article.section.name %}
+                    <subject id="atype-{{ article.section.id }}">{{ article.section.name|safe }}</subject>
+                    {% endif %}
                 </subj-group>
                 {% endif %}
             </article-categories>
