@@ -75,3 +75,17 @@ class TransferLogs(models.Model):
     message = models.TextField()
     message_date_time = models.DateTimeField(auto_now_add=True)
     success = models.BooleanField(default=False)
+
+class EditorialManagerSection(models.Model):
+    """
+    The model used for the editorial manager section to save the variable IDs.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    section = models.ForeignKey(
+            "submission.Section",
+            on_delete=models.CASCADE,
+            null=False, blank=False
+    )
+
+    editorial_manager_section_id = models.CharField(max_length=64, null=False, blank=False)

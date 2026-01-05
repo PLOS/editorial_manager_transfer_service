@@ -6,14 +6,17 @@ from typing import List
 
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
+from django.core.exceptions import ValidationError
 from django.shortcuts import render
 from journal.models import Journal
 from plugins.editorial_manager_transfer_service import forms
 from plugins.editorial_manager_transfer_service.enums.report_state import ReportState
-from plugins.editorial_manager_transfer_service.models import TransferReport, TransferLogs
+from plugins.editorial_manager_transfer_service.forms import EditorialManagerTransferServiceSectionEditorForm
+from plugins.editorial_manager_transfer_service.models import TransferReport, TransferLogs, EditorialManagerSection
 from plugins.editorial_manager_transfer_service.utils.settings import get_plugin_settings, save_plugin_settings
 from plugins.production_transporter.utilities import data_fetch
 from security import decorators
+from submission.models import Section
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -74,6 +77,119 @@ def manager(request):
     }
 
     return render(request, template, context)
+
+@staff_member_required
+@decorators.has_journal
+def manager_sections(request):
+    journal: Journal = request.journal
+
+    template = 'editorial_manager_transfer_service/editorial_manager_sections.html'
+    janeway_sections = list(Section.objects.filter(journal=journal).order_by("-name"))
+    sections = []
+    for janeway_section in janeway_sections:
+        em_section = EditorialManagerSection.objects.filter(section=janeway_section).first()
+
+        section = {
+            "janeway_section": janeway_section,
+            "em_section": em_section,
+        }
+        sections.append(section)
+
+    context = {'journal': journal,
+               'sections': sections}
+
+    return render(request, template, context)
+
+def manager_section_editor(request, section_id: int | None = None):
+    """
+    Manage an individual section.
+    :param request:
+    :param section_id:
+    :return:
+    """
+    journal: Journal = request.journal
+
+    template = 'editorial_manager_transfer_service/editorial_manager_section_editor.html'
+    janeway_section = Section.objects.filter(id=section_id).first()
+
+    if janeway_section is None:
+        raise Exception("No section found")
+
+    em_section = EditorialManagerSection.objects.filter(section=janeway_section).first()
+    em_section_id = None
+    if em_section is not None:
+        em_section_id = em_section.editorial_manager_section_id
+
+    if request.POST:
+        logger.debug("Beginning to save Editorial Manager Section...")
+        form = forms.EditorialManagerTransferServiceSectionEditorForm(request.POST)
+
+        if form.is_valid():
+            new_em_section_id = form.cleaned_data["em_section_id"]
+            janeway_section_name = form.cleaned_data["janeway_section_name"]
+
+            # Update the section name if it changed.
+            if janeway_section_name != janeway_section.name:
+                janeway_section.update(name=janeway_section_name)
+
+            # Update the em_section_id
+            update_em_section_id(janeway_section, em_section_id, new_em_section_id)
+
+            # Update references.
+            em_section = EditorialManagerSection.objects.filter(section=janeway_section).first()
+            em_section_id = None
+            if em_section is not None:
+                em_section_id = em_section.editorial_manager_section_id
+
+    form = EditorialManagerTransferServiceSectionEditorForm(
+                initial={
+                    "em_section_id": em_section_id,
+                    "janeway_section_name": janeway_section.name,
+                }
+            )
+
+    section = {
+        "janeway_section": janeway_section,
+        "em_section": em_section,
+    }
+
+    context = {'journal': journal,
+               'section': section,
+               "form": form,}
+
+    return render(request, template, context)
+
+def update_em_section_id(section: Section, old_id: str | None = None, new_id: str | None = None) -> None:
+    """
+    Updates the EM section ID, if required.
+    :param section: The section to update.
+    :param old_id: The old EM section ID.
+    :param new_id: The new EM section ID.
+    """
+    if not old_id:
+        old_id = ""
+
+    if not new_id:
+        new_id = ""
+
+    new_id = new_id.strip().lower()
+    old_id = old_id.strip().lower()
+
+    # Nothing to do.
+    if old_id == new_id:
+        logger.info(f"EM section ID is same.")
+        return
+
+    # Means the old ID existed, but the new ID does not.
+    if new_id == "":
+        EditorialManagerSection.objects.filter(section=section).delete()
+        logger.info(f"EM section ID deleted.")
+        return
+
+    em_section = EditorialManagerSection.objects.get_or_create(section=section)[0]
+    em_section.editorial_manager_section_id = new_id
+    em_section.save()
+    logger.info(f"EM section id {old_id} updated to {new_id}")
 
 
 @staff_member_required
