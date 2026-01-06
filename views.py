@@ -110,7 +110,7 @@ def manager_section_editor(request, section_id: int | None = None):
     journal: Journal = request.journal
 
     template = 'editorial_manager_transfer_service/editorial_manager_section_editor.html'
-    janeway_section = Section.objects.filter(id=section_id).first()
+    janeway_section: Section = Section.objects.filter(id=section_id).first()
 
     if janeway_section is None:
         raise Exception("No section found")
@@ -130,7 +130,8 @@ def manager_section_editor(request, section_id: int | None = None):
 
             # Update the section name if it changed.
             if janeway_section_name != janeway_section.name:
-                janeway_section.update(name=janeway_section_name)
+                janeway_section.name = janeway_section_name
+                janeway_section.save()
 
             # Update the em_section_id
             update_em_section_id(janeway_section, em_section_id, new_em_section_id)
