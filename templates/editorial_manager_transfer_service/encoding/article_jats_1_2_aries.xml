@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE article SYSTEM "JATS-archivearticle1-mathml3.dtd">
-        {% load settings text %}{# A template for encoding an submission.models.Article as JATS 1.2 #}{# Context: `journal` `article` `body` `include_declaration` `answer_fields` `license` `frozen_authors`#}
+        {% load settings text %}{# A template for encoding an submission.models.Article as JATS 1.2 #}{# Context: `journal` `article` `body` `include_declaration` `answer_fields` `license` `frozen_authors` `em_section`#}
 <article
         article-type="{{ article.section.jats_article_type|default:'research-article' }}"
         dtd-version="1.1d1"
@@ -18,10 +18,10 @@
             <article-id pub-id-type="manuscript">{{ article.pk }}</article-id>
             {% if article.get_doi %}<article-id pub-id-type="doi">{{ article.get_doi }}</article-id>{% endif %}
             <article-categories>
-                {% if article.section %}
+                {% if em_section %}
                 <subj-group subj-group-type="Article Type">
-                    {% if article.section.name %}
-                    <subject id="atype-{{ article.section.id }}">{{ article.section.name|safe }}</subject>
+                    {% if em_section %}
+                    <subject id="atype-{{ em_section.editorial_manager_section_id }}">{{ em_section.section.name|safe }}</subject>
                     {% endif %}
                 </subj-group>
                 {% endif %}
