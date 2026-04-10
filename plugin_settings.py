@@ -9,6 +9,7 @@ import os
 
 import plugins.editorial_manager_transfer_service.consts as consts
 import plugins.editorial_manager_transfer_service.logger_messages as logger_messages
+from django.core.checks import Error, register
 from utils import plugins
 from utils.install import update_settings
 from utils.logger import get_logger
@@ -24,6 +25,22 @@ VERSION = consts.VERSION
 SHORT_NAME = consts.SHORT_NAME
 MANAGER_URL = consts.MANAGER_URL
 JANEWAY_VERSION = consts.JANEWAY_VERSION
+
+
+@register
+def check_for_production_transporter_plugin(app_configs, **kwargs):
+    errors = []
+    try:
+        import plugins.production_transporter
+    except ImportError:
+        errors.append(
+                Error(
+                        "No Production Transporter Plugin Installed",
+                        hint="You must install the Production Transporter plugin.",
+                        id="plugin.editorial_manager_transfer_service.E001",
+                )
+        )
+    return errors
 
 
 class EditorialManagerTransferServicePlugin(plugins.Plugin):
@@ -47,7 +64,7 @@ def install():
     """
     logger.info(logger_messages.plugin_installation_beginning())
     update_settings(
-        file_path="plugins/editorial_manager_transfer_service/install/settings.json"
+            file_path="plugins/editorial_manager_transfer_service/install/settings.json"
     )
     plugin, created = EditorialManagerTransferServicePlugin.install()
 
@@ -76,6 +93,12 @@ def install():
 
 def hook_registry():
     EditorialManagerTransferServicePlugin.hook_registry()
+    return {
+        "journal_editor_nav_block": {
+            "module": "plugins.editorial_manager_transfer_service.hooks",
+            "function": "menu_hook",
+        },
+    }
 
 
 def register_for_events():

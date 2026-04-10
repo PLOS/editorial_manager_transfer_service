@@ -1,0 +1,62 @@
+{% extends "admin/core/base.html" %}
+
+{% block title %}Editorial Manager Transfer Service - Sections{% endblock %}
+{% block title-section %}Editorial Manager Transfer Service - Sections{% endblock %}
+
+{% block breadcrumbs %}
+    {{ block.super }}
+    <li><a href="{% url 'editorial_manager_transfer_service_manager' %}">Editorial Manager Transfer Service</a></li>
+    <li>Sections</li>
+{% endblock %}
+
+{% block body %}
+    <div class="large-12 columns">
+        <div class="box">
+            <div class="title-area">
+                <h2>Sections for Editorial Manager</h2><br>
+                <p>Use this page to view and edit links between Janeway sections and Editorial Manager IDs for the Editorial Manager transfer service.</p>
+                <p>You can edit or delete links at any time.</p>
+            </div>
+            <div class="content">
+                <table class="small article_list" id="editorial_manager_sections_table">
+                    <thead>
+                    <tr>
+                        <th>Editorial Manager ID</th>
+                        <th>Janeway ID</th>
+                        <th>Section Name</th>
+                        {% if request.user.is_staff %}
+                            <th>Actions</th>
+                        {% endif %}
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    {% for section in sections %}
+                        <tr>
+                            <td>
+                                {% if section.em_section %}
+                                {{ section.em_section.editorial_manager_section_id }}
+                                {% endif %}
+                            </td>
+                            <td>{{ section.janeway_section.pk }}</td>
+                            <td>{{ section.janeway_section.name }}</td>
+                            {% if request.user.is_staff %}
+                                <td>
+                                    <a href="{% url 'editorial_manager_transfer_service_manager_section_editor' section.janeway_section.pk %}"
+                                       class="small button info">
+                                        <i class="fa fa-paperclip" aria-hidden="true">&nbsp;</i> Edit
+                                    </a>
+                                </td>
+                            {% endif %}
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6">No sections to show.</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -50,3 +50,5 @@ GO_FILE_ELEMENT_TAG_ARCHIVE_FILE = "archive-file"
 GO_FILE_ELEMENT_TAG_FILEGROUP = "filegroup"
 GO_FILE_ELEMENT_TAG_FILE = "file"
 GO_FILE_ELEMENT_TAG_METADATA_FILE = "metadata-file"
+
+JATS_XML_FILE = 'editorial_manager_transfer_service/encoding/article_jats_1_2_aries.xml'

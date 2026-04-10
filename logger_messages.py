@@ -82,50 +82,22 @@ def process_finished_fetching_article(article_id: int) -> str:
     return "Completed fetching article from database (ID: {0})...".format(article_id)
 
 
-def process_failed_fetching_article(article_id: int) -> str:
-    """
-    Gets the log message for when an article failed to be fetched.
-    :param: article_id: The ID of the article being fetched.
-    :return: The logger message.
-    """
-    return "Fetching article from database (ID: {0}) failed. Discontinuing export process.".format(article_id)
-
-
-def process_fetching_journal(janway_journal_code: str) -> str:
+def process_fetching_journal(janeway_journal_code: str) -> str:
     """
     Gets the log message for when a journal is being fetched from the database.
     :param: janway_journal_code: The code of the journal being fetched.
     :return: The logger message.
     """
-    return "Fetching journal from database (Code: {0})...".format(janway_journal_code)
+    return "Fetching journal from database (Code: {0})...".format(janeway_journal_code)
 
 
-def process_finished_fetching_journal(janway_journal_code: str) -> str:
+def process_finished_fetching_journal(janeway_journal_code: str) -> str:
     """
     Gets the log message for when a journal is being fetched from the database.
     :param: janway_journal_code: The code of the journal being fetched.
     :return: The logger message.
     """
-    return "Completed fetching journal from database (Code: {0})...".format(janway_journal_code)
-
-
-def process_failed_fetching_journal(janway_journal_code: str) -> str:
-    """
-    Gets the log message for when a journal failed to be fetched.
-    :param: janway_journal_code: The code of the journal being fetched.
-    :return: The logger message.
-    """
-    return "Fetching journal from database (Code: {0}) failed. Discontinuing export process.".format(
-            janway_journal_code)
-
-
-def process_failed_fetching_metadata(article_id) -> str:
-    """
-    Gets the log message for when an article's metadata failed to be fetched.
-    :param: article_id: The ID of the article being fetched.
-    :return: The logger message.
-    """
-    return "Fetching article (ID: {0}) metadata failed. Discontinuing export process.".format(article_id)
+    return "Completed fetching journal from database (Code: {0})...".format(janeway_journal_code)
 
 
 def process_failed_fetching_article_files(article_id) -> str:
@@ -137,29 +109,13 @@ def process_failed_fetching_article_files(article_id) -> str:
     return "Fetching files for article (ID: {0}) failed. Discontinuing export process.".format(article_id)
 
 
-def process_failed_fetching_journal(article_id) -> str:
+def process_failed_fetching_metadata(article_id) -> str:
     """
-    Gets the log message for when an article's journal failed to be fetched.
-    :param: article_id: The ID of the article.
-    :return: The logger message.
-     """
-    return "Fetching journal where article (ID: {0}) lives failed. Discontinuing export process.".format(article_id)
-
-
-def process_failed_no_article_id_provided() -> str:
-    """
-    Gets the log message for when an article ID was not provided.
+    Gets the log message for when an article's metadata failed to be fetched.
+    :param: article_id: The ID of the article being fetched.
     :return: The logger message.
     """
-    return "No article ID provided. Discontinuing export process."
-
-
-def process_failed_no_janeway_journal_code_provided() -> str:
-    """
-    Gets the log message for when no journal code was provided.
-    :return: The logger message.
-    """
-    return "No Janeway journal code was provided. Discontinuing export process."
+    return "Fetching article (ID: {0}) metadata failed. Discontinuing export process.".format(article_id)
 
 
 def export_process_failed_no_export_folder() -> str:
@@ -170,21 +126,20 @@ def export_process_failed_no_export_folder() -> str:
     return "No export folder provided. Discontinuing export process."
 
 
-def __export_process_failed_ingest(article_id: str) -> str:
+def __export_process_failed_ingest(article_id: int) -> str:
     """
     Gets the log message for when the article failed to be ingested into Editorial Manager.
     :param article_id: The ID of the article being fetched.
     :return: The logger message.
     """
-    "Export process failed during ingest to Editorial Manager for article (ID: {0})".format(article_id)
+    return "Export process failed during ingest to Editorial Manager for article (ID: {0})".format(article_id)
 
 
-def export_process_failed_ingest(article_id: str, error_message: str = None) -> str:
+def export_process_failed_ingest(article_id: int, error_message: str = None) -> str:
     """
     Gets the log message for when the article failed to be ingested into Editorial Manager.
     :param article_id: The ID of the article being fetched.
     :param error_message: The error message to be logged.
-    :param error: The exception to be logged.
     :return: The logger message.
     """
     if error_message:
@@ -192,7 +147,7 @@ def export_process_failed_ingest(article_id: str, error_message: str = None) -> 
     return __export_process_failed_ingest(article_id)
 
 
-def export_process_succeeded(article_id: int) -> str:
+def export_go_file_process_succeeded(article_id: int) -> str:
     """
     Gets the log message for when the export process was successful.
     :return: The logger message.
@@ -200,7 +155,15 @@ def export_process_succeeded(article_id: int) -> str:
     return "Export process succeeded for article (ID: {0}).".format(article_id)
 
 
-def excport_process_failed_delete_file(filepath: str) -> str:
+def export_zip_file_process_succeeded(article_id: int) -> str:
+    """
+    Gets the log message for when the export process was successful.
+    :return: The logger message.
+    """
+    return "Export process succeeded for the zip file for article (ID: {0}).".format(article_id)
+
+
+def export_process_failed_delete_file(filepath: str) -> str:
     """
     Gets the log message for when an export file failed to be deleted.
     :param filepath: The path to the export file.
