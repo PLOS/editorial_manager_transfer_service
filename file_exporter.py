@@ -90,6 +90,11 @@ class ExportFileCreation:
         if self.in_error_state:
             return
 
+        # Creates or fetches a report to track where this process is.
+        self.transfer_report = get_or_create_transfer_report(
+                self.journal, self.article
+            )
+
         # Get the export folder.
         export_folders: str | None = get_article_export_folders()
         if export_folders is None:
@@ -97,9 +102,6 @@ class ExportFileCreation:
             self.in_error_state = True
             return
         self.export_folder = export_folders
-
-        # Creates or fetches a report to track where this process is.
-        self.transfer_report = get_or_create_transfer_report(self.journal, self.article)
 
         # Start export process
         self.__create_export_file()
@@ -126,6 +128,11 @@ class ExportFileCreation:
         else:
             return self.go_filepath
 
+    def __get_temp_folder(self) -> str:
+        if self.__temp_folder is None:
+            return ""
+        return self.__temp_folder
+
     def __create_export_file(self):
         """
         Creates the export file for
@@ -141,7 +148,7 @@ class ExportFileCreation:
             self.export_folder, "{0}.zip".format(prefix)
         )
         self.__temp_folder = os.path.join(self.export_folder, "{0}".format(prefix))
-        os.makedirs(self.__temp_folder, exist_ok=True)
+        os.makedirs(self.__get_temp_folder(), exist_ok=True)
 
         # Attempt to get the metadata file.
         if self.__get_xml_filepath() is None:
@@ -165,10 +172,10 @@ class ExportFileCreation:
         # Move files to temp folder.
         for article_file in article_files:
             filepath: str = article_file.get_file_path(self.article)
-            copy_files_to_temp_deposit_folder(filepath, self.__temp_folder)
+            copy_files_to_temp_deposit_folder(filepath, self.__get_temp_folder())
             filenames.append(os.path.basename(filepath))
 
-        deposit_helpers.zip_temp_folder(temp_folder=self.__temp_folder)
+        deposit_helpers.zip_temp_folder(temp_folder=self.__get_temp_folder())
 
         # Remove the manuscript
         self.__create_go_xml_file(
@@ -312,7 +319,7 @@ class ExportFileCreation:
         """
         if not self.xml_filepath:
             filepath = generate_jats_metadata(
-                self.journal, self.article, self.__temp_folder
+                self.journal, self.article, self.__get_temp_folder()
             )
 
             if not filepath:
