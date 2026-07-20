@@ -23,6 +23,9 @@ from plugins.editorial_manager_transfer_service.enums.transfer_log_message_type 
     TransferLogMessageType,
 )
 from plugins.editorial_manager_transfer_service.models import TransferLogs
+from plugins.editorial_manager_transfer_service.utils.file_path import (
+    create_export_folder,
+)
 from plugins.editorial_manager_transfer_service.utils.jats import (
     get_xml_license_code,
     generate_jats_metadata,
@@ -56,8 +59,9 @@ def get_article_export_folders() -> str | None:
         return consts.EXPORT_FILE_PATH
     else:
         logger.warn(
-            f"No export file was found. The given export folder was: {consts.EXPORT_FILE_PATH}"
+            f"No export file was found. The given export folder was: {consts.EXPORT_FILE_PATH}... Creating filepath..."
         )
+        create_export_folder()
         return None
 
 
@@ -91,9 +95,7 @@ class ExportFileCreation:
             return
 
         # Creates or fetches a report to track where this process is.
-        self.transfer_report = get_or_create_transfer_report(
-                self.journal, self.article
-            )
+        self.transfer_report = get_or_create_transfer_report(self.journal, self.article)
 
         # Get the export folder.
         export_folders: str | None = get_article_export_folders()

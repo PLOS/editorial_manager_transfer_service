@@ -1,6 +1,7 @@
 """
 A plugin to provide information for Aries' Editorial Manager to enable automatic transfers.
 """
+
 __author__ = "Rosetta Reatherford"
 __license__ = "AGPL v3"
 __maintainer__ = "The Public Library of Science (PLOS)"
@@ -10,6 +11,11 @@ import os
 import plugins.editorial_manager_transfer_service.consts as consts
 import plugins.editorial_manager_transfer_service.logger_messages as logger_messages
 from django.core.checks import Error, register
+
+from plugins.editorial_manager_transfer_service.utils.file_path import (
+    create_export_folder,
+    create_import_folder,
+)
 from utils import plugins
 from utils.install import update_settings
 from utils.logger import get_logger
@@ -34,11 +40,11 @@ def check_for_production_transporter_plugin(app_configs, **kwargs):
         import plugins.production_transporter
     except ImportError:
         errors.append(
-                Error(
-                        "No Production Transporter Plugin Installed",
-                        hint="You must install the Production Transporter plugin.",
-                        id="plugin.editorial_manager_transfer_service.E001",
-                )
+            Error(
+                "No Production Transporter Plugin Installed",
+                hint="You must install the Production Transporter plugin.",
+                id="plugin.editorial_manager_transfer_service.E001",
+            )
         )
     return errors
 
@@ -47,6 +53,7 @@ class EditorialManagerTransferServicePlugin(plugins.Plugin):
     """
     The plugin class for the Editorial Manager Transfer Service.
     """
+
     plugin_name = consts.PLUGIN_NAME
     display_name = consts.DISPLAY_NAME
     description = consts.DESCRIPTION
@@ -64,25 +71,12 @@ def install():
     """
     logger.info(logger_messages.plugin_installation_beginning())
     update_settings(
-            file_path="plugins/editorial_manager_transfer_service/install/settings.json"
+        file_path="plugins/editorial_manager_transfer_service/install/settings.json"
     )
     plugin, created = EditorialManagerTransferServicePlugin.install()
 
-    # Create the export folder.
-    try:
-        logger.info(logger_messages.export_folder_creating())
-        os.makedirs(consts.EXPORT_FILE_PATH)
-    except FileExistsError:
-        logger.info(logger_messages.export_folder_created())
-        pass
-
-    # Create the import folder.
-    try:
-        logger.info(logger_messages.import_folder_creating())
-        os.makedirs(consts.IMPORT_FILE_PATH)
-    except FileExistsError:
-        logger.info(logger_messages.import_folder_created())
-        pass
+    create_export_folder()
+    create_import_folder()
 
     if created:
         # Log the plugin was installed.
