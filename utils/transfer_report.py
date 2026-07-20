@@ -18,7 +18,7 @@ def get_or_create_transfer_report(
     :return: A new or existing TransferReport.
     """
     if journal is None or article is None:
-        logger.warn(
+        logger.error(
             f"Attempted to get transfer report when journal (ID: "
             f"{journal.id if journal is not None else 'None'})) or article (ID: "
             f"{article.id if article is not None else 'None'}) was none."
