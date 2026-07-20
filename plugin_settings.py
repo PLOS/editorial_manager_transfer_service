@@ -68,23 +68,23 @@ def install():
     )
     plugin, created = EditorialManagerTransferServicePlugin.install()
 
+    # Create the export folder.
+    try:
+        logger.info(logger_messages.export_folder_creating())
+        os.makedirs(consts.EXPORT_FILE_PATH)
+    except FileExistsError:
+        logger.info(logger_messages.export_folder_created())
+        pass
+
+    # Create the import folder.
+    try:
+        logger.info(logger_messages.import_folder_creating())
+        os.makedirs(consts.IMPORT_FILE_PATH)
+    except FileExistsError:
+        logger.info(logger_messages.import_folder_created())
+        pass
+
     if created:
-        # Create the export folder.
-        try:
-            logger.info(logger_messages.export_folder_creating())
-            os.makedirs(consts.EXPORT_FILE_PATH)
-        except FileExistsError:
-            logger.info(logger_messages.export_folder_created())
-            pass
-
-        # Create the import folder.
-        try:
-            logger.info(logger_messages.import_folder_creating())
-            os.makedirs(consts.IMPORT_FILE_PATH)
-        except FileExistsError:
-            logger.info(logger_messages.import_folder_created())
-            pass
-
         # Log the plugin was installed.
         logger.info(logger_messages.plugin_installed())
     else:
