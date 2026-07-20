@@ -375,7 +375,7 @@ class ExportFileCreation:
     def log_error(
         self,
         message: str,
-        error: Exception = None,
+        error: Exception | None = None,
         stage: ReportState = ReportState.FAILED_BUNDLING,
     ) -> None:
         """
@@ -384,8 +384,14 @@ class ExportFileCreation:
         :param error: The exception, if there is one.
         :param stage: Specify which stage this transfer is in.
         """
-        logger.exception(error)
-        logger.error(message)
+        if error is not None:
+            logger.error(message, logger.exception(error))
+        else:
+            logger.error(message)
+
+        if self.transfer_report is None:
+            return
+
         if self.transfer_report.report_state != stage:
             self.transfer_report.report_state = stage
             self.transfer_report.save()
