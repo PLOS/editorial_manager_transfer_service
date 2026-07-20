@@ -7,7 +7,10 @@ from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-def get_or_create_transfer_report(journal: Journal | None, article: Article | None) -> TransferReport | None:
+
+def get_or_create_transfer_report(
+    journal: Journal | None, article: Article | None
+) -> TransferReport | None:
     """
     Gets or creates a new TransferReport based on the given information.
     :param journal: The journal to use.
@@ -15,18 +18,24 @@ def get_or_create_transfer_report(journal: Journal | None, article: Article | No
     :return: A new or existing TransferReport.
     """
     if journal is None or article is None:
-        logger.warn(f"Attempted to get transfer report when journal (ID: "
-                    f"{journal.id if journal is not None else 'None'})) or article (ID: "
-                    f"{article.id if article is not None else 'None'}) was none.")
+        logger.warn(
+            f"Attempted to get transfer report when journal (ID: "
+            f"{journal.id if journal is not None else 'None'})) or article (ID: "
+            f"{article.id if article is not None else 'None'}) was none."
+        )
         return None
 
     try:
-        transfer_reports = TransferReport.objects.filter(journal=journal, article=article,
-                                                         resolved=False).order_by("-message_date_time_start")
+        transfer_reports = TransferReport.objects.filter(
+            journal=journal, article=article, resolved=False
+        ).order_by("-message_date_time_start")
         if len(transfer_reports) > 0:
             return transfer_reports[0]
 
-        transfer_report = TransferReport.objects.create(journal=journal, article=article, )
+        transfer_report = TransferReport.objects.create(
+            journal=journal,
+            article=article,
+        )
     except TransferReport.DoesNotExist:
         raise TransferReport.DoesNotExist()
     return transfer_report

@@ -10,6 +10,11 @@ import os
 import plugins.editorial_manager_transfer_service.consts as consts
 import plugins.editorial_manager_transfer_service.logger_messages as logger_messages
 from django.core.checks import Error, register
+
+from plugins.editorial_manager_transfer_service.utils.file_path import (
+    create_export_folder,
+    create_import_folder,
+)
 from utils import plugins
 from utils.install import update_settings
 from utils.logger import get_logger
@@ -68,21 +73,8 @@ def install():
     )
     plugin, created = EditorialManagerTransferServicePlugin.install()
 
-    # Create the export folder.
-    try:
-        logger.info(logger_messages.export_folder_creating())
-        os.makedirs(consts.EXPORT_FILE_PATH)
-    except FileExistsError:
-        logger.info(logger_messages.export_folder_created())
-        pass
-
-    # Create the import folder.
-    try:
-        logger.info(logger_messages.import_folder_creating())
-        os.makedirs(consts.IMPORT_FILE_PATH)
-    except FileExistsError:
-        logger.info(logger_messages.import_folder_created())
-        pass
+    create_export_folder()
+    create_import_folder()
 
     if created:
         # Log the plugin was installed.
