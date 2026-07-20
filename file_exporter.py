@@ -55,14 +55,15 @@ def get_article_export_folders() -> str | None:
 
     :return: A list of filepaths for the export folders.
     """
-    if os.path.exists(consts.EXPORT_FILE_PATH):
-        return consts.EXPORT_FILE_PATH
-    else:
+    # Make sure the folder ALWAYS exists.
+    if not os.path.exists(consts.EXPORT_FILE_PATH):
         logger.warn(
-            f"No export file was found. The given export folder was: {consts.EXPORT_FILE_PATH}... Creating filepath..."
+            f"No export folder was found. The given export folder was: {consts.EXPORT_FILE_PATH}... Creating "
+            f"filepath..."
         )
         create_export_folder()
-        return None
+
+    return consts.EXPORT_FILE_PATH
 
 
 class ExportFileCreation:
