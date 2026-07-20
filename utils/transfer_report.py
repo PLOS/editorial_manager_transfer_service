@@ -3,15 +3,23 @@ from journal.models import Journal
 from plugins.editorial_manager_transfer_service.enums.report_state import ReportState
 from plugins.editorial_manager_transfer_service.models import TransferReport
 from submission.models import Article
+from utils.logger import get_logger
 
+logger = get_logger(__name__)
 
-def get_or_create_transfer_report(journal: Journal, article: Article) -> TransferReport:
+def get_or_create_transfer_report(journal: Journal | None, article: Article | None) -> TransferReport | None:
     """
     Gets or creates a new TransferReport based on the given information.
     :param journal: The journal to use.
     :param article: The article to use.
     :return: A new or existing TransferReport.
     """
+    if journal is None or article is None:
+        logger.warn(f"Attempted to get transfer report when journal (ID: "
+                    f"{journal.id if journal is not None else 'None'})) or article (ID: "
+                    f"{article.id if article is not None else 'None'}) was none.")
+        return None
+
     try:
         transfer_reports = TransferReport.objects.filter(journal=journal, article=article,
                                                          resolved=False).order_by("-message_date_time_start")
