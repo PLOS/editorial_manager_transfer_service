@@ -93,7 +93,10 @@
         {% endfor %}
     </contrib-group>
     {% if article.has_manuscript_file %}
-    <ext-link specific-use="Manuscript" xlink:href="{{ article.pk }}.docx" xlink:title="Manuscript"/>
+    {% for article_file in manuscript_files %}
+    <ext-link specific-use="{{ article_file.article_type.value }}" xlink:href="{{ article_file.full_filename }}"
+              xlink:title="{{ article_file.article_type.value }}"/>
+    {% endfor %}
     {% endif %}
     {% if article.date_submitted or article.date_accepted %}
     <history>

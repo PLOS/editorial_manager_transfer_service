@@ -16,7 +16,6 @@ from janeway_ftp import helpers as deposit_helpers
 
 import plugins.editorial_manager_transfer_service.consts as consts
 import plugins.editorial_manager_transfer_service.logger_messages as logger_messages
-from core.models import File
 from journal.models import Journal
 from plugins.editorial_manager_transfer_service.enums.report_state import ReportState
 from plugins.editorial_manager_transfer_service.enums.transfer_log_message_type import (
@@ -29,6 +28,9 @@ from plugins.editorial_manager_transfer_service.utils.file_path import (
 from plugins.editorial_manager_transfer_service.utils.jats import (
     get_xml_license_code,
     generate_jats_metadata,
+    JATSArticleFile,
+    JATSArticleTypeForEM,
+    convert_file_to_jats_dict,
 )
 from plugins.editorial_manager_transfer_service.utils.settings import (
     get_license_code,
@@ -162,7 +164,9 @@ class ExportFileCreation:
             return
 
         # Attempt to fetch the article files.
-        article_files: Sequence[File] = self.__fetch_article_files(self.article)
+        article_files: Sequence[JATSArticleFile] = self.__fetch_article_files(
+            self.article
+        )
         if len(article_files) <= 0:
             self.log_error(
                 logger_messages.process_failed_fetching_article_files(self.article_id)
@@ -170,19 +174,16 @@ class ExportFileCreation:
             self.in_error_state = True
             return
 
-        filenames: List[str] = []
-
         # Move files to temp folder.
         for article_file in article_files:
-            filepath: str = article_file.get_file_path(self.article)
+            filepath: str = article_file.get("filepath")
             copy_files_to_temp_deposit_folder(filepath, self.__get_temp_folder())
-            filenames.append(os.path.basename(filepath))
 
         deposit_helpers.zip_temp_folder(temp_folder=self.__get_temp_folder())
 
         # Remove the manuscript
         self.__create_go_xml_file(
-            os.path.basename(self.__get_xml_filepath()), filenames, prefix
+            os.path.basename(self.__get_xml_filepath()), article_files, prefix
         )
 
     def get_license_code(self) -> str:
@@ -229,7 +230,10 @@ class ExportFileCreation:
         )
 
     def __create_go_xml_file(
-        self, metadata_filename: str, article_filenames: Sequence[str], filename: str
+        self,
+        metadata_filename: str,
+        article_filenames: Sequence[JATSArticleFile],
+        filename: str,
     ):
         """
         Creates the go xml file for the export process for Editorial Manager.
@@ -307,7 +311,13 @@ class ExportFileCreation:
 
         for article_filename in article_filenames:
             file_tree = ETree.SubElement(filegroup, consts.GO_FILE_ELEMENT_TAG_FILE)
-            file_tree.set(consts.GO_FILE_ATTRIBUTE_ELEMENT_NAME_KEY, article_filename)
+            article_filename_path: str | None = article_filename.get(
+                "full_filename", None
+            )
+            file_tree.set(
+                consts.GO_FILE_ATTRIBUTE_ELEMENT_NAME_KEY,
+                article_filename_path,
+            )
 
         tree = ETree.ElementTree(go)
         self.go_filepath = os.path.join(
@@ -432,25 +442,44 @@ class ExportFileCreation:
         resolve_transfer_report(self.transfer_report)
 
     @staticmethod
-    def __fetch_article_files(article: Article) -> List[File]:
+    def __fetch_article_files(article: Article | None) -> List[JATSArticleFile]:
         """
         Fetches the manuscript (or content or body) of an article alongside any other files associated with it.
         :param article: The article to fetch the manuscript files for.
         :return: A list of all files related to the article.
         """
 
-        files: List[File] = list()
+        if article is None:
+            return list()
+
+        files: List[JATSArticleFile] = list()
 
         for manuscript in article.manuscript_files.all():
-            files.append(manuscript)
+            files.append(
+                convert_file_to_jats_dict(
+                    article, manuscript, JATSArticleTypeForEM.MANUSCRIPT
+                )
+            )
 
         for data_file in article.data_figure_files.all():
-            files.append(data_file)
+            files.append(
+                convert_file_to_jats_dict(
+                    article, data_file, JATSArticleTypeForEM.DATA_FILE
+                )
+            )
 
         for source_file in article.source_files.all():
-            files.append(source_file)
+            files.append(
+                convert_file_to_jats_dict(
+                    article, source_file, JATSArticleTypeForEM.SOURCE_FILE
+                )
+            )
 
         for supplementary_file in article.supplementary_files.all():
-            files.append(supplementary_file)
+            files.append(
+                convert_file_to_jats_dict(
+                    article, supplementary_file, JATSArticleTypeForEM.SUPPLEMENTARY_FILE
+                )
+            )
 
         return files
