@@ -11,7 +11,7 @@
         <journal-meta>
             <journal-id journal-id-type="publisher">{{ license }}</journal-id>
             <journal-title-group>
-                <journal-title>{{ journal.name|safe }}</journal-title>
+                <journal-title>{{ journal.name }}</journal-title>
             </journal-title-group>
         </journal-meta>
         <article-meta>
@@ -21,13 +21,13 @@
                 {% if em_section %}
                 <subj-group subj-group-type="Article Type">
                     {% if em_section %}
-                    <subject id="atype-{{ em_section.editorial_manager_section_id }}">{{ em_section.section.name|safe }}</subject>
+                    <subject id="atype-{{ em_section.editorial_manager_section_id }}">{{ em_section.section.name }}</subject>
                     {% endif %}
                 </subj-group>
                 {% endif %}
             </article-categories>
             <title-group>
-                <article-title>{{ article.title|safe }}</article-title>
+                <article-title>{{ article.title }}</article-title>
             </title-group>
             <contrib-group>
                 {% for item in frozen_authors %}
@@ -36,9 +36,9 @@
                 {% if author.order %}<role content-type="{{ author.order }}"/>{% endif %}
                 {% if author.credits %}{% for credit_record in author.credits.all %}<role vocab="CRediT" vocab-term="{{ credit_record.get_role_display }}"/>{% endfor %} {% endif %}
                 <name>
-                    <surname>{{ author.last_name|safe }}</surname>
-                    <given-names>{{ author.given_names|safe }}</given-names>
-                    {% if author.name_prefix %}<prefix>{{ author.name_prefix|safe }}</prefix>{% endif %}
+                    <surname>{{ author.last_name }}</surname>
+                    <given-names>{{ author.given_names }}</given-names>
+                    {% if author.name_prefix %}<prefix>{{ author.name_prefix }}</prefix>{% endif %}
                 </name>
                 {% if author.orcid %}
                 <contrib-id contrib-id-type="orcid"
@@ -56,7 +56,7 @@
         </contrib>
         {% if author.is_corporate %}
         <contrib contrib-type="author">
-            <collab>{{ author.corporate_name|safe }}</collab>
+            <collab>{{ author.corporate_name }}</collab>
         </contrib>
         {% endif %}
 		{% endwith %}
@@ -67,25 +67,25 @@
         <aff id="aff{{ forloop.parentloop.counter }}-{{ forloop.counter }}">
             {% if affiliation.ringgold_id %}
             <institution-wrap>
-                <institution>{{ affiliation.affiliation.organization.name|safe }}</institution>
+                <institution>{{ affiliation.affiliation.organization.name }}</institution>
                 {% if affiliation.ringgold_id %}
                 <institution-id institution-id-type="Ringgold">{{ affiliation.ringgold_id }}</institution-id>
                 {% endif %}
             </institution-wrap>
             {% else %}
-            <institution>{{ affiliation.affiliation.organization.name|safe }}</institution>
+            <institution>{{ affiliation.affiliation.organization.name }}</institution>
             {% endif %}
             {% if affiliation.affiliation.organization.title %}
-            <institution content-type="position">{{ affiliation.affiliation.organization.title|safe }}</institution>
+            <institution content-type="position">{{ affiliation.affiliation.organization.title }}</institution>
             {% endif %}
             {% if affiliation.affiliation.organization.department %}
-            <institution content-type="dept">{{ affiliation.affiliation.organization.department|safe }}</institution>
+            <institution content-type="dept">{{ affiliation.affiliation.organization.department }}</institution>
             {% endif %}
             {% for addrline in affiliation.affiliation.organization.locations.all %}
-            <addr-line content-type="addrline{{ forloop.counter }}">{{ addrline|safe }}</addr-line>
+            <addr-line content-type="addrline{{ forloop.counter }}">{{ addrline }}</addr-line>
             {% endfor %}
             {% if affiliation.affiliation.organization.country %}
-            <country specific-use="us">{{ affiliation.affiliation.organization.country|safe }}</country>
+            <country specific-use="us">{{ affiliation.affiliation.organization.country }}</country>
             {% endif %}
         </aff>
         {% endfor %}
@@ -94,8 +94,9 @@
     </contrib-group>
     {% if article.has_manuscript_file %}
     {% for article_file in manuscript_files %}
-    <ext-link specific-use="{{ article_file.article_type.value }}" xlink:href="{{ article_file.full_filename }}"
-              xlink:title="{{ article_file.article_type.value }}"/>
+    <ext-link specific-use="{{ article_file.article_type.value|safe }}"
+              xlink:href="{{ article_file.full_filename|safe }}"
+              xlink:title="{{ article_file.article_type.value|safe }}"/>
     {% endfor %}
     {% endif %}
     {% if article.date_submitted or article.date_accepted %}
@@ -142,8 +143,8 @@
             <principal-award-recipient>
                 <contrib-id contrib-id-type="orcid">{{ author.orcid }}</contrib-id>
                 <name>
-                    <surname>{{ author.last_name|safe }}</surname>
-                    <given-names>{{ author.given_names|safe }}</given-names>
+                    <surname>{{ author.last_name }}</surname>
+                    <given-names>{{ author.given_names }}</given-names>
                 </name>
             </principal-award-recipient>
             {% endif %}
@@ -161,7 +162,7 @@
     {% if answer_fields %}
     <custom-meta-group>
         {% for field in answer_fields %}
-        <custom-meta id="{{ field.field.slug }}" specific-use="question">
+        <custom-meta id="{{ field.field.slug|safe }}" specific-use="question">
             <meta-name>{{ field.field.name|safe }}</meta-name>
             <meta-value>{{ field.answer|safe }}</meta-value>
         </custom-meta>

@@ -20,6 +20,10 @@ from plugins.editorial_manager_transfer_service.utils import settings
 from plugins.editorial_manager_transfer_service.utils.data_fetch import (
     fetch_answer_fields_for_jats,
 )
+from plugins.editorial_manager_transfer_service.utils.encoding import (
+    encode_string_for_xml,
+    JATSFieldAnswer,
+)
 from plugins.editorial_manager_transfer_service.utils.interfaces.FrozenAuthorForJats import (
     JATSFrozenAuthor,
     JATSFrozenAffiliation,
@@ -52,10 +56,10 @@ def get_jats_article_file(
     filename: str = os.path.basename(filepath)
     split_filename: list[str] = filename.split(".", 2)
     return JATSArticleFile(
-        filepath=filepath,
-        full_filename=filename,
-        filename=split_filename[0],
-        file_type=split_filename[1],
+        filepath=encode_string_for_xml(filepath),
+        full_filename=encode_string_for_xml(filename),
+        filename=encode_string_for_xml(split_filename[0]),
+        file_type=encode_string_for_xml(split_filename[1]),
         article_type=article_type,
     )
 
@@ -100,7 +104,7 @@ def generate_jats_metadata(
 
     template = consts.JATS_XML_FILE
 
-    answer_fields: List[FieldAnswer] | None = fetch_answer_fields_for_jats(article)
+    answer_fields: List[JATSFieldAnswer] | None = fetch_answer_fields_for_jats(article)
     if answer_fields is None:
         answer_fields = []
 
@@ -117,17 +121,9 @@ def generate_jats_metadata(
             )
         )
 
-    context = {
-        "journal": journal,
-        "article": article,
-        "include_declaration": True,
-        "body": True,
-        "answer_fields": answer_fields,
-        "license": get_xml_license_code(journal),
-        "frozen_authors": frozen_authors,
-        "em_section": em_section,
-        "manuscript_files": files,
-    }
+    context = create_context(
+        journal, article, True, True, answer_fields, frozen_authors, em_section, files
+    )
 
     try:
         rendered_jats: SafeString = render_to_string(template, context)
@@ -149,6 +145,34 @@ def generate_jats_metadata(
         file.close()
 
     return full_path
+
+
+def create_context(
+    journal: Journal,
+    article: Article,
+    include_declaration: bool,
+    include_body: bool,
+    answer_fields: List[JATSFieldAnswer],
+    frozen_authors: List[FrozenAuthorForJats],
+    em_section: EditorialManagerSection | None,
+    files: List[JATSArticleFile],
+) -> dict:
+    """
+    Creates the context for rendering a JATS. Does proper XML encoding.
+    :return:
+    """
+
+    return {
+        "journal": journal,
+        "article": article,
+        "include_declaration": include_declaration,
+        "body": include_body,
+        "answer_fields": answer_fields,
+        "license": get_xml_license_code(journal),
+        "frozen_authors": frozen_authors,
+        "em_section": em_section,
+        "manuscript_files": files,
+    }
 
 
 def fetch_em_section(article: Article) -> EditorialManagerSection | None:
