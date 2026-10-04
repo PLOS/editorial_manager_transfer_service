@@ -6,6 +6,7 @@ __license__ = "AGPL v3"
 __maintainer__ = "The Public Library of Science (PLOS)"
 
 import uuid
+
 from django.db import models
 from plugins.editorial_manager_transfer_service.enums.report_state import ReportState
 from plugins.editorial_manager_transfer_service.enums.transfer_log_message_type import TransferLogMessageType
@@ -89,3 +90,27 @@ class EditorialManagerSection(models.Model):
     )
 
     editorial_manager_section_id = models.CharField(max_length=64, null=False, blank=False)
+
+class EditorialManagerFieldToSlug(models.Model):
+    """
+        EM identifies additional fields for a given journal article via slugs
+        we need a mapping of the janeway field_id to slug to ensure each FieldAnswer gets mapped
+        accordingly within EM
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    field = models.ForeignKey(
+                "submission.Journal",
+                on_delete=models.CASCADE,
+                null=True, blank=True
+    )
+
+    field = models.ForeignKey(
+            "submission.Field",
+            on_delete=models.CASCADE,
+            null=True, blank=True
+    )
+
+    slug = models.CharField(
+        max_length=40,
+    )

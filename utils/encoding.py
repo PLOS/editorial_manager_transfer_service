@@ -25,14 +25,14 @@ def encode_string_for_xml(str_to_encode: str) -> str:
     return escape(str_to_encode, entities={"'": "&apos;", '"': "&quot;"})
 
 
-def encode_answer_field(answer_field: FieldAnswer) -> JATSFieldAnswer:
+def encode_answer_field(answer_field: FieldAnswer, slug: str) -> JATSFieldAnswer:
     """
     Encodes an answer field for usage in JATS.
     :param answer_field: The answer field to encode.
     :return: The encoded field.
     """
     field: JATSField = JATSField(
-        slug=encode_string_for_xml(answer_field.field.slug),
+        slug=encode_string_for_xml(slug),
         name=encode_string_for_xml(answer_field.field.name),
     )
     return JATSFieldAnswer(
