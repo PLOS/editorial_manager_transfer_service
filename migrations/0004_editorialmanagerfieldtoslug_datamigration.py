@@ -9,11 +9,6 @@ def populate_field_to_slug_mapping(apps, schema_editor):
 
     for field in fields:
         if field.slug is not None and field.journal is not None:
-            print('journal id: %s' % field.journal.id)
-            print('slug: %s' % field.slug)
-            print('name: %s' % field.name)
-            print('id: %s' % field.id)
-
             field_to_slug_mapping, created = EditorialManagerFieldToSlug.objects.get_or_create(
                 journal_id=field.journal.id, field_id=field.id, slug=field.slug
             )
