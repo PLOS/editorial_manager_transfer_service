@@ -48,7 +48,7 @@ def fetch_answer_fields_for_jats(
 
         field_to_slug_map = dict()
 
-        for field_to_slug in field_to_slug_map:
+        for field_to_slug in field_to_slug_set:
             field_to_slug_map[field_to_slug.field.id] = field_to_slug.slug
 
         answer_fields_set = FieldAnswer.objects.filter(
