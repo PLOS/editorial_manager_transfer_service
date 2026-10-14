@@ -5,13 +5,14 @@ __maintainer__ = "The Public Library of Science (PLOS)"
 from typing import List
 
 from django.core.cache import cache
-
 from plugins.editorial_manager_transfer_service.utils.encoding import (
-    encode_answer_field,
     JATSFieldAnswer,
+    encode_answer_field,
 )
 from plugins.production_transporter.utilities.data_fetch import CACHE_TIMEOUT
-from submission.models import FieldAnswer, Article
+from submission.models import Article, FieldAnswer
+
+from models import EditorialManagerFieldToSlug
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -38,6 +39,18 @@ def fetch_answer_fields_for_jats(
         )
 
     if not answer_fields:
+        field_to_slug_set = EditorialManagerFieldToSlug.objects.filter(journal=article.journal)
+
+        if field_to_slug_set is None:
+            logger.warn(
+                f"Field to slug mapping missing for article (ID: {article.pk})."
+            )
+
+        field_to_slug_map = dict()
+
+        for field_to_slug in field_to_slug_set:
+            field_to_slug_map[field_to_slug.field.id] = field_to_slug.slug
+
         answer_fields_set = FieldAnswer.objects.filter(
             article=article
         ).prefetch_related("field")
@@ -49,7 +62,12 @@ def fetch_answer_fields_for_jats(
 
         encoded_answer_field_set: List[JATSFieldAnswer] = []
         for answer_field in answer_fields_set:
-            encoded_answer_field_set.append(encode_answer_field(answer_field))
+            slug = field_to_slug_map.get(answer_field.field.id)
+            if slug is None:
+                # fallback to old column until migration complete
+                slug = answer_field.field.slug
+
+            encoded_answer_field_set.append(encode_answer_field(answer_field, slug))
 
         answer_fields = encoded_answer_field_set
         cache.set(
