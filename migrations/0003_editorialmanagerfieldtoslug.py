@@ -1,23 +1,25 @@
 import uuid
 
-import django.db.models.deletion
-from django.db import migrations, models
+from django.db import migrations
+from django.db.models import CharField, ForeignKey, UUIDField, deletion
 
 
 class Migration(migrations.Migration):
 
     dependencies = [
         ('editorial_manager_transfer_service', '0002_editorialmanagersection'),
+        ('submission', '0003_field'),
+        ('journal', '0001_initial'),
     ]
 
     operations = [
         migrations.CreateModel(
             name='EditorialManagerFieldToSlug',
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('journal', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='submission.journal')),
-                ('field', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='submission.field')),
-                ('slug', models.CharField(max_length=40))
+                ('id', UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                ('journal', ForeignKey(on_delete=deletion.CASCADE, to='journal.journal')),
+                ('field', ForeignKey(on_delete=deletion.CASCADE, to='submission.field')),
+                ('slug', CharField(max_length=40))
             ],
         ),
     ]

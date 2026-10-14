@@ -99,8 +99,8 @@ class EditorialManagerFieldToSlug(models.Model):
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
-    field = models.ForeignKey(
-                "submission.Journal",
+    journal = models.ForeignKey(
+                "journal.Journal",
                 on_delete=models.CASCADE,
                 null=True, blank=True
     )
