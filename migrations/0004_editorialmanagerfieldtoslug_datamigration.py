@@ -14,7 +14,7 @@ def populate_field_to_slug_mapping(apps, schema_editor):
                 field_to_slug_mapping, created = EditorialManagerFieldToSlug.objects.get_or_create(
                     journal_id=field.journal.id, field_id=field.id, slug=field.slug
                 )
-        except FieldDoesNotExist:
+        except (FieldDoesNotExist, AttributeError):
             # Migration being run after slug column deleted from codebase, therefore this is a no-op
             return
 

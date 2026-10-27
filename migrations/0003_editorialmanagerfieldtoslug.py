@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
             name='EditorialManagerFieldToSlug',
             fields=[
                 ('id', UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('journal', ForeignKey(on_delete=deletion.CASCADE, to='journal.journal')),
+                ('journal', ForeignKey(on_delete=deletion.CASCADE, to='journal.journal', null=True)),
                 ('field', ForeignKey(on_delete=deletion.CASCADE, to='submission.field')),
                 ('slug', CharField(max_length=40))
             ],
